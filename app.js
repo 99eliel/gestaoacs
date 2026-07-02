@@ -18,6 +18,7 @@ import {
   where,
   onSnapshot,
   getDocs,
+  updateDoc,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
@@ -75,6 +76,11 @@ const els = {
   monthsGrid: $("months-grid"),
   visitsMessage: $("visits-message"),
   acsMessage: $("acs-message"),
+  adminName: $("admin-name"),
+  adminEmail: $("admin-email"),
+  adminPosto: $("admin-posto"),
+  adminMessage: $("admin-message"),
+  adminList: $("admin-list"),
   tabEnfermeira: $("tab-enfermeira"),
   tabAdmin: $("tab-admin"),
   enfermeiraPanel: $("enfermeira-panel"),
@@ -146,8 +152,25 @@ function openTab(tab) {
   if (isAdminTab) loadAdminDashboard();
 }
 
-function isAdminEmail(email) {
-  return ADMIN_EMAILS.map((item) => item.toLowerCase()).includes(String(email || "").toLowerCase());
+function emailKey(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function isOwnerAdminEmail(email) {
+  return ADMIN_EMAILS.map((item) => item.toLowerCase()).includes(emailKey(email));
+}
+
+async function isAuthorizedAdminEmail(email) {
+  const key = emailKey(email);
+  if (!key) return false;
+  if (isOwnerAdminEmail(key)) return true;
+
+  try {
+    const snap = await getDoc(doc(db, "adminEmails", key));
+    return snap.exists() && snap.data().ativo === true;
+  } catch (error) {
+    return false;
+  }
 }
 
 async function loadUserProfile(user) {
@@ -186,7 +209,7 @@ async function registerUser() {
   try {
     showMessage(els.authMessage, "Criando conta...");
     const credential = await createUserWithEmailAndPassword(auth, email, senha);
-    const tipo = isAdminEmail(email) ? "admin" : "enfermeira";
+    const tipo = await isAuthorizedAdminEmail(email) ? "admin" : "enfermeira";
 
     await setDoc(doc(db, "usuarios", credential.user.uid), {
       nome,
@@ -255,9 +278,15 @@ function traduzErroFirebase(error) {
 async function addAcs() {
   const nome = normalizeText($("acs-name").value);
   const microarea = normalizeText($("acs-microarea").value);
+  const pessoasCadastradas = Number($("acs-pessoas").value || 0);
 
   if (!nome) {
     showMessage(els.acsMessage, "Digite o nome do ACS.", true);
+    return;
+  }
+
+  if (!Number.isInteger(pessoasCadastradas) || pessoasCadastradas <= 0) {
+    showMessage(els.acsMessage, "Digite quantas pessoas estão cadastradas na área desse ACS.", true);
     return;
   }
 
@@ -265,6 +294,7 @@ async function addAcs() {
     await addDoc(collection(db, "acs"), {
       nome,
       microarea,
+      pessoasCadastradas,
       posto: currentProfile.posto,
       enfermeiraId: currentUser.uid,
       enfermeiraNome: currentProfile.nome,
@@ -274,6 +304,7 @@ async function addAcs() {
 
     $("acs-name").value = "";
     $("acs-microarea").value = "";
+    $("acs-pessoas").value = "";
     showMessage(els.acsMessage, "ACS cadastrado com sucesso!");
   } catch (error) {
     showMessage(els.acsMessage, traduzErroFirebase(error), true);
@@ -327,7 +358,7 @@ function renderAcsList() {
     item.innerHTML = `
       <div>
         <strong>${escapeHtml(acs.nome)}</strong>
-        <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")}</span>
+        <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")} | Pessoas cadastradas: ${Number(acs.pessoasCadastradas || 0)}</span>
       </div>
       <button class="secondary-btn">Lançar visitas</button>
     `;
@@ -341,7 +372,7 @@ async function selectAcs(acs) {
   selectedAcs = acs;
   els.visitasCard.classList.remove("hidden");
   els.selectedAcsTitle.textContent = `Lançamento mensal - ${acs.nome}`;
-  els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"}`;
+  els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"} | Pessoas cadastradas: ${Number(acs.pessoasCadastradas || 0)}`;
   await renderMonthsForSelectedAcs();
   els.visitasCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -364,10 +395,14 @@ async function renderMonthsForSelectedAcs() {
     visitasPorMes[data.mes] = data.quantidade;
   });
 
+  const totalPessoas = Number(selectedAcs.pessoasCadastradas || 0);
+
   els.monthsGrid.innerHTML = "";
 
   meses.forEach((mesNome, index) => {
     const mesNumero = index + 1;
+    const quantidadeAtual = Number(visitasPorMes[mesNumero] ?? 0);
+    const percentualAtual = calcularPercentual(quantidadeAtual, totalPessoas);
     const box = document.createElement("div");
     box.className = "month-box";
     box.innerHTML = `
@@ -377,11 +412,27 @@ async function renderMonthsForSelectedAcs() {
         min="0"
         step="1"
         data-month="${mesNumero}"
-        value="${visitasPorMes[mesNumero] ?? 0}"
+        value="${quantidadeAtual}"
       />
+      <small class="coverage-info">Cobertura: <strong>${percentualAtual}%</strong></small>
     `;
+
+    const input = box.querySelector("input");
+    input.addEventListener("input", () => {
+      const visitas = Number(input.value || 0);
+      box.querySelector(".coverage-info strong").textContent = `${calcularPercentual(visitas, totalPessoas)}%`;
+    });
+
     els.monthsGrid.appendChild(box);
   });
+}
+
+function calcularPercentual(visitas, pessoas) {
+  const totalPessoas = Number(pessoas || 0);
+  const totalVisitas = Number(visitas || 0);
+
+  if (!totalPessoas || totalPessoas <= 0) return 0;
+  return Math.round((totalVisitas / totalPessoas) * 100);
 }
 
 async function saveVisits() {
@@ -396,6 +447,8 @@ async function saveVisits() {
     for (const input of inputs) {
       const mes = Number(input.dataset.month);
       const quantidade = Number(input.value || 0);
+      const pessoasCadastradas = Number(selectedAcs.pessoasCadastradas || 0);
+      const coberturaPercentual = calcularPercentual(quantidade, pessoasCadastradas);
 
       if (quantidade < 0) {
         showMessage(els.visitsMessage, "A quantidade não pode ser negativa.", true);
@@ -409,6 +462,8 @@ async function saveVisits() {
         enfermeiraId: selectedAcs.enfermeiraId,
         nomeEnfermeira: selectedAcs.enfermeiraNome,
         posto: selectedAcs.posto,
+        pessoasCadastradas,
+        coberturaPercentual,
         ano,
         mes,
         quantidade,
@@ -443,6 +498,98 @@ async function loadCurrentMonthTotal() {
   }
 }
 
+
+async function addAdminManual() {
+  const nome = normalizeText(els.adminName.value);
+  const email = emailKey(els.adminEmail.value);
+  const posto = normalizeText(els.adminPosto.value) || "Secretaria de Saúde";
+
+  if (!nome || !email) {
+    showMessage(els.adminMessage, "Preencha pelo menos nome e e-mail do novo administrador.", true);
+    return;
+  }
+
+  if (!email.includes("@") || !email.includes(".")) {
+    showMessage(els.adminMessage, "Digite um e-mail válido.", true);
+    return;
+  }
+
+  try {
+    showMessage(els.adminMessage, "Salvando administrador...");
+
+    await setDoc(doc(db, "adminEmails", email), {
+      nome,
+      email,
+      posto,
+      ativo: true,
+      criadoPor: currentUser.uid,
+      criadoPorEmail: currentUser.email,
+      criadoEm: serverTimestamp()
+    }, { merge: true });
+
+    const usuariosSnap = await getDocs(query(collection(db, "usuarios"), where("email", "==", email)));
+    for (const userDoc of usuariosSnap.docs) {
+      await updateDoc(doc(db, "usuarios", userDoc.id), {
+        tipo: "admin",
+        posto,
+        atualizadoEm: serverTimestamp()
+      });
+    }
+
+    els.adminName.value = "";
+    els.adminEmail.value = "";
+    els.adminPosto.value = "";
+
+    if (usuariosSnap.empty) {
+      showMessage(els.adminMessage, "Administrador liberado. Agora ele precisa criar cadastro usando esse mesmo e-mail.");
+    } else {
+      showMessage(els.adminMessage, "Administrador liberado e perfil existente atualizado para admin.");
+    }
+
+    await loadAdminDashboard();
+  } catch (error) {
+    showMessage(els.adminMessage, traduzErroFirebase(error), true);
+  }
+}
+
+async function renderAdminList() {
+  if (!els.adminList) return;
+
+  const admins = [];
+  ADMIN_EMAILS.forEach((email) => {
+    admins.push({
+      email,
+      nome: "Administrador principal",
+      posto: "Secretaria de Saúde",
+      ativo: true,
+      principal: true
+    });
+  });
+
+  try {
+    const snap = await getDocs(collection(db, "adminEmails"));
+    snap.forEach((item) => admins.push({ id: item.id, ...item.data() }));
+  } catch (error) {
+    els.adminList.innerHTML = `<div class="empty-box">Erro ao carregar administradores: ${traduzErroFirebase(error)}</div>`;
+    return;
+  }
+
+  if (!admins.length) {
+    els.adminList.innerHTML = `<div class="empty-box">Nenhum administrador adicional cadastrado.</div>`;
+    return;
+  }
+
+  els.adminList.innerHTML = admins.map((admin) => `
+    <div class="admin-item">
+      <div>
+        <strong>${escapeHtml(admin.nome || admin.email)}</strong>
+        <span class="muted">${escapeHtml(admin.email)} | ${escapeHtml(admin.posto || "Secretaria de Saúde")}</span>
+      </div>
+      <span class="badge ${admin.ativo === false ? "danger-badge" : "success-badge"}">${admin.principal ? "Principal" : admin.ativo === false ? "Inativo" : "Ativo"}</span>
+    </div>
+  `).join("");
+}
+
 async function loadAdminDashboard() {
   if (!currentProfile || currentProfile.tipo !== "admin") return;
 
@@ -475,6 +622,7 @@ async function loadAdminDashboard() {
   els.adminTotalAcs.textContent = acsSnap.size;
 
   renderAdminReport();
+  await renderAdminList();
 }
 
 function renderAdminReport() {
@@ -495,7 +643,7 @@ function renderAdminReport() {
   els.adminTotalVisitas.textContent = total;
 
   if (!filtrado.length) {
-    els.adminReportBody.innerHTML = `<tr><td colspan="6">Nenhum dado encontrado.</td></tr>`;
+    els.adminReportBody.innerHTML = `<tr><td colspan="8">Nenhum dado encontrado.</td></tr>`;
     return;
   }
 
@@ -504,9 +652,11 @@ function renderAdminReport() {
       <td>${escapeHtml(item.posto)}</td>
       <td>${escapeHtml(item.nomeEnfermeira)}</td>
       <td>${escapeHtml(item.nomeAcs)}</td>
+      <td>${Number(item.pessoasCadastradas || 0)}</td>
       <td>${item.ano}</td>
       <td>${meses[(item.mes || 1) - 1]}</td>
       <td><strong>${Number(item.quantidade || 0)}</strong></td>
+      <td><strong>${Number(item.coberturaPercentual ?? calcularPercentual(item.quantidade, item.pessoasCadastradas))}%</strong></td>
     </tr>
   `).join("");
 }
@@ -523,14 +673,16 @@ function exportCsv() {
     return text.includes(filtro);
   });
 
-  const header = ["Posto", "Enfermeira", "ACS", "Ano", "Mes", "Visitas"];
+  const header = ["Posto", "Enfermeira", "ACS", "Pessoas cadastradas", "Ano", "Mes", "Visitas", "Cobertura percentual"];
   const rows = dados.map((item) => [
     item.posto,
     item.nomeEnfermeira,
     item.nomeAcs,
+    Number(item.pessoasCadastradas || 0),
     item.ano,
     meses[(item.mes || 1) - 1],
-    item.quantidade
+    item.quantidade,
+    `${Number(item.coberturaPercentual ?? calcularPercentual(item.quantidade, item.pessoasCadastradas))}%`
   ]);
 
   const csv = [header, ...rows]
@@ -571,6 +723,7 @@ function bindEvents() {
   $("btn-logout").addEventListener("click", () => signOut(auth));
   $("btn-add-acs").addEventListener("click", addAcs);
   $("btn-save-visits").addEventListener("click", saveVisits);
+  $("btn-add-admin").addEventListener("click", addAdminManual);
   $("btn-export-csv").addEventListener("click", exportCsv);
 
   els.searchAcs.addEventListener("input", renderAcsList);

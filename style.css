@@ -359,3 +359,56 @@ th {
     flex-direction: column;
   }
 }
+
+.coverage-info {
+  display: block;
+  margin-top: 8px;
+  color: var(--primary-dark);
+  font-weight: 700;
+}
+
+.admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-item {
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #fbfffe;
+}
+
+.admin-item strong {
+  display: block;
+  color: var(--primary-dark);
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.success-badge {
+  background: var(--primary-soft);
+  color: var(--primary-dark);
+}
+
+.danger-badge {
+  background: #fee2e2;
+  color: var(--danger);
+}
+
+@media (max-width: 820px) {
+  .admin-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

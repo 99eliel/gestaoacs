@@ -11,15 +11,25 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/usuarios/$(request.auth.uid));
     }
 
+    function isOwnerAdminEmail() {
+      return signedIn() && request.auth.token.email in ["carmoeliel99@gmail.com"];
+    }
+
+    function isAuthorizedAdminEmail() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/adminEmails/$(request.auth.token.email))
+        && get(/databases/$(database)/documents/adminEmails/$(request.auth.token.email)).data.ativo == true;
+    }
+
     function isAdmin() {
       return signedIn()
         && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
         && myUserDoc().data.tipo == "admin";
     }
 
-    function isAdminEmail() {
-      // TROQUE pelo seu e-mail de administrador.
-      return signedIn() && request.auth.token.email in ["carmoeliel99@gmail.com"];
+    match /adminEmails/{emailId} {
+      allow create, update, delete: if isAdmin();
+      allow read: if isAdmin() || (signedIn() && request.auth.token.email == emailId);
     }
 
     match /usuarios/{userId} {
@@ -32,7 +42,7 @@ service cloud.firestore {
         && request.resource.data.tipo in ["enfermeira", "admin"]
         && (
           request.resource.data.tipo == "enfermeira"
-          || (request.resource.data.tipo == "admin" && isAdminEmail())
+          || (request.resource.data.tipo == "admin" && (isOwnerAdminEmail() || isAuthorizedAdminEmail()))
         );
 
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
@@ -58,6 +68,8 @@ service cloud.firestore {
         )
         && request.resource.data.nome is string
         && request.resource.data.posto is string
+        && request.resource.data.pessoasCadastradas is number
+        && request.resource.data.pessoasCadastradas > 0
         && request.resource.data.ativo == true;
 
       allow read: if signedIn()
@@ -87,7 +99,11 @@ service cloud.firestore {
         && request.resource.data.mes >= 1
         && request.resource.data.mes <= 12
         && request.resource.data.quantidade is number
-        && request.resource.data.quantidade >= 0;
+        && request.resource.data.quantidade >= 0
+        && request.resource.data.pessoasCadastradas is number
+        && request.resource.data.pessoasCadastradas > 0
+        && request.resource.data.coberturaPercentual is number
+        && request.resource.data.coberturaPercentual >= 0;
 
       allow read: if signedIn()
         && (
