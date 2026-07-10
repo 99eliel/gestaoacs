@@ -88,8 +88,7 @@
           <input id="acs-name" type="text" placeholder="Ex.: João da Silva" />
           <label>Microárea <span class="muted">opcional</span></label>
           <input id="acs-microarea" type="text" placeholder="Ex.: 01" />
-          <label>Pessoas cadastradas na área</label>
-          <input id="acs-pessoas" type="number" min="1" step="1" placeholder="Ex.: 100" />
+          <p class="muted">O total de cidadãos cadastrados será informado mês a mês no lançamento, para manter o histórico correto.</p>
           <button id="btn-add-acs" class="primary-btn">Salvar ACS</button>
           <p id="acs-message" class="message"></p>
         </div>
@@ -99,6 +98,7 @@
           <p><strong>Posto:</strong> <span id="posto-name">-</span></p>
           <p><strong>ACS cadastrados:</strong> <span id="total-acs">0</span></p>
           <p><strong>Visitas no mês atual:</strong> <span id="total-current-month">0</span></p>
+          <p><strong>Cobertura média no mês atual:</strong> <span id="avg-current-coverage">0%</span></p>
         </div>
       </div>
 
@@ -187,7 +187,7 @@
                 <th>Posto</th>
                 <th>Enfermeira</th>
                 <th>ACS</th>
-                <th>Pessoas cadastradas</th>
+                <th>Cidadãos cadastrados no mês</th>
                 <th>Ano</th>
                 <th>Mês</th>
                 <th>Visitas</th>

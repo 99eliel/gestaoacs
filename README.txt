@@ -1,4 +1,4 @@
-SISTEMA DE CONTROLE DE VISITAS ACS - VERSÃO COM ADMIN E COBERTURA
+SISTEMA DE CONTROLE DE VISITAS ACS - VERSÃO COM POPULAÇÃO MENSAL
 
 Projeto pronto em HTML, CSS e JavaScript usando Firebase Authentication e Cloud Firestore.
 
@@ -13,15 +13,15 @@ FUNÇÕES PRONTAS
 - Cadastro de enfermeiras.
 - Nome do posto no cadastro.
 - Cadastro de ACS.
-- Campo de pessoas cadastradas na área de cada ACS.
 - Lista de ACS por enfermeira.
-- Lançamento das visitas por mês.
-- Cálculo automático de cobertura do território.
-  Exemplo: ACS com 100 pessoas cadastradas e 70 visitas = 70%.
+- Lançamento mensal com dois campos por mês: cidadãos cadastrados no mês e visitas realizadas.
+- Cálculo automático de cobertura do território usando a população daquele mês.
+  Exemplo: Janeiro com 500 cidadãos e 400 visitas = 80%.
+  Exemplo: Fevereiro com 450 cidadãos e 400 visitas = 89%.
 - Painel administrativo.
 - Função para liberar outros administradores manualmente pelo e-mail.
 - Relatório administrativo por ano e mês.
-- Relatório com pessoas cadastradas e percentual de cobertura.
+- Relatório com cidadãos cadastrados por mês e percentual de cobertura mensal.
 - Exportação CSV.
 - Recuperação de senha.
 
@@ -67,4 +67,4 @@ COMO SUBIR NO GITHUB PAGES
 6. No Firebase, em Authentication > Settings > Authorized domains, adicione 99eliel.github.io se o login der erro de domínio.
 
 OBSERVAÇÃO IMPORTANTE
-Não cadastre dados de pacientes no sistema. Use apenas quantidade de visitas por ACS e total de pessoas cadastradas na área.
+Não cadastre dados de pacientes no sistema. Use apenas quantidade de visitas por ACS e total de cidadãos cadastrados no mês.

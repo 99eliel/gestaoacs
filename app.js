@@ -67,6 +67,7 @@ const els = {
   postoName: $("posto-name"),
   totalAcs: $("total-acs"),
   totalCurrentMonth: $("total-current-month"),
+  avgCurrentCoverage: $("avg-current-coverage"),
   acsList: $("acs-list"),
   searchAcs: $("search-acs"),
   visitasCard: $("visitas-card"),
@@ -278,15 +279,9 @@ function traduzErroFirebase(error) {
 async function addAcs() {
   const nome = normalizeText($("acs-name").value);
   const microarea = normalizeText($("acs-microarea").value);
-  const pessoasCadastradas = Number($("acs-pessoas").value || 0);
 
   if (!nome) {
     showMessage(els.acsMessage, "Digite o nome do ACS.", true);
-    return;
-  }
-
-  if (!Number.isInteger(pessoasCadastradas) || pessoasCadastradas <= 0) {
-    showMessage(els.acsMessage, "Digite quantas pessoas estão cadastradas na área desse ACS.", true);
     return;
   }
 
@@ -294,7 +289,6 @@ async function addAcs() {
     await addDoc(collection(db, "acs"), {
       nome,
       microarea,
-      pessoasCadastradas,
       posto: currentProfile.posto,
       enfermeiraId: currentUser.uid,
       enfermeiraNome: currentProfile.nome,
@@ -304,7 +298,6 @@ async function addAcs() {
 
     $("acs-name").value = "";
     $("acs-microarea").value = "";
-    $("acs-pessoas").value = "";
     showMessage(els.acsMessage, "ACS cadastrado com sucesso!");
   } catch (error) {
     showMessage(els.acsMessage, traduzErroFirebase(error), true);
@@ -358,7 +351,7 @@ function renderAcsList() {
     item.innerHTML = `
       <div>
         <strong>${escapeHtml(acs.nome)}</strong>
-        <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")} | Pessoas cadastradas: ${Number(acs.pessoasCadastradas || 0)}</span>
+        <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")} | População informada mês a mês</span>
       </div>
       <button class="secondary-btn">Lançar visitas</button>
     `;
@@ -372,7 +365,7 @@ async function selectAcs(acs) {
   selectedAcs = acs;
   els.visitasCard.classList.remove("hidden");
   els.selectedAcsTitle.textContent = `Lançamento mensal - ${acs.nome}`;
-  els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"} | Pessoas cadastradas: ${Number(acs.pessoasCadastradas || 0)}`;
+  els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"} | Informe cidadãos cadastrados e visitas em cada mês`;
   await renderMonthsForSelectedAcs();
   els.visitasCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -392,36 +385,58 @@ async function renderMonthsForSelectedAcs() {
 
   snap.forEach((docSnap) => {
     const data = docSnap.data();
-    visitasPorMes[data.mes] = data.quantidade;
+    visitasPorMes[data.mes] = {
+      quantidade: Number(data.quantidade || 0),
+      pessoasCadastradas: Number(data.pessoasCadastradas ?? selectedAcs.pessoasCadastradas ?? 0)
+    };
   });
-
-  const totalPessoas = Number(selectedAcs.pessoasCadastradas || 0);
 
   els.monthsGrid.innerHTML = "";
 
   meses.forEach((mesNome, index) => {
     const mesNumero = index + 1;
-    const quantidadeAtual = Number(visitasPorMes[mesNumero] ?? 0);
-    const percentualAtual = calcularPercentual(quantidadeAtual, totalPessoas);
+    const dadosMes = visitasPorMes[mesNumero] || { quantidade: 0, pessoasCadastradas: 0 };
+    const quantidadeAtual = Number(dadosMes.quantidade || 0);
+    const pessoasAtual = Number(dadosMes.pessoasCadastradas || 0);
+    const percentualAtual = calcularPercentual(quantidadeAtual, pessoasAtual);
     const box = document.createElement("div");
     box.className = "month-box";
     box.innerHTML = `
       <label>${mesNome}</label>
-      <input
-        type="number"
-        min="0"
-        step="1"
-        data-month="${mesNumero}"
-        value="${quantidadeAtual}"
-      />
+      <div class="month-fields">
+        <div>
+          <span>Cidadãos cadastrados</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            data-month="${mesNumero}"
+            data-field="pessoas"
+            value="${pessoasAtual}"
+          />
+        </div>
+        <div>
+          <span>Visitas realizadas</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            data-month="${mesNumero}"
+            data-field="visitas"
+            value="${quantidadeAtual}"
+          />
+        </div>
+      </div>
       <small class="coverage-info">Cobertura: <strong>${percentualAtual}%</strong></small>
     `;
 
-    const input = box.querySelector("input");
-    input.addEventListener("input", () => {
-      const visitas = Number(input.value || 0);
-      box.querySelector(".coverage-info strong").textContent = `${calcularPercentual(visitas, totalPessoas)}%`;
-    });
+    const atualizarCobertura = () => {
+      const pessoas = Number(box.querySelector('input[data-field="pessoas"]').value || 0);
+      const visitas = Number(box.querySelector('input[data-field="visitas"]').value || 0);
+      box.querySelector(".coverage-info strong").textContent = `${calcularPercentual(visitas, pessoas)}%`;
+    };
+
+    box.querySelectorAll("input").forEach((input) => input.addEventListener("input", atualizarCobertura));
 
     els.monthsGrid.appendChild(box);
   });
@@ -439,19 +454,26 @@ async function saveVisits() {
   if (!selectedAcs) return;
 
   const ano = Number(els.yearSelect.value);
-  const inputs = Array.from(els.monthsGrid.querySelectorAll("input[data-month]"));
+  const monthBoxes = Array.from(els.monthsGrid.querySelectorAll(".month-box"));
 
   try {
     showMessage(els.visitsMessage, "Salvando...");
 
-    for (const input of inputs) {
-      const mes = Number(input.dataset.month);
-      const quantidade = Number(input.value || 0);
-      const pessoasCadastradas = Number(selectedAcs.pessoasCadastradas || 0);
+    for (const box of monthBoxes) {
+      const pessoasInput = box.querySelector('input[data-field="pessoas"]');
+      const visitasInput = box.querySelector('input[data-field="visitas"]');
+      const mes = Number(pessoasInput.dataset.month);
+      const pessoasCadastradas = Number(pessoasInput.value || 0);
+      const quantidade = Number(visitasInput.value || 0);
       const coberturaPercentual = calcularPercentual(quantidade, pessoasCadastradas);
 
-      if (quantidade < 0) {
-        showMessage(els.visitsMessage, "A quantidade não pode ser negativa.", true);
+      if (!Number.isInteger(pessoasCadastradas) || !Number.isInteger(quantidade) || pessoasCadastradas < 0 || quantidade < 0) {
+        showMessage(els.visitsMessage, "Use apenas números inteiros e positivos nos lançamentos.", true);
+        return;
+      }
+
+      if (quantidade > 0 && pessoasCadastradas <= 0) {
+        showMessage(els.visitsMessage, "Quando houver visitas no mês, informe também o total de cidadãos cadastrados daquele mês.", true);
         return;
       }
 
@@ -471,7 +493,7 @@ async function saveVisits() {
       }, { merge: true });
     }
 
-    showMessage(els.visitsMessage, "Visitas salvas com sucesso!");
+    showMessage(els.visitsMessage, "Lançamentos mensais salvos com sucesso!");
     loadCurrentMonthTotal();
   } catch (error) {
     showMessage(els.visitsMessage, traduzErroFirebase(error), true);
@@ -491,10 +513,25 @@ async function loadCurrentMonthTotal() {
 
     const snap = await getDocs(q);
     let total = 0;
-    snap.forEach((item) => total += Number(item.data().quantidade || 0));
+    let somaPercentual = 0;
+    let mesesComBase = 0;
+
+    snap.forEach((item) => {
+      const data = item.data();
+      total += Number(data.quantidade || 0);
+      if (Number(data.pessoasCadastradas || 0) > 0) {
+        somaPercentual += Number(data.coberturaPercentual ?? calcularPercentual(data.quantidade, data.pessoasCadastradas));
+        mesesComBase += 1;
+      }
+    });
+
     els.totalCurrentMonth.textContent = total;
+    if (els.avgCurrentCoverage) {
+      els.avgCurrentCoverage.textContent = mesesComBase ? `${Math.round(somaPercentual / mesesComBase)}%` : "0%";
+    }
   } catch (error) {
     els.totalCurrentMonth.textContent = "-";
+    if (els.avgCurrentCoverage) els.avgCurrentCoverage.textContent = "-";
   }
 }
 
@@ -673,7 +710,7 @@ function exportCsv() {
     return text.includes(filtro);
   });
 
-  const header = ["Posto", "Enfermeira", "ACS", "Pessoas cadastradas", "Ano", "Mes", "Visitas", "Cobertura percentual"];
+  const header = ["Posto", "Enfermeira", "ACS", "Cidadãos cadastrados no mês", "Ano", "Mes", "Visitas", "Cobertura percentual"];
   const rows = dados.map((item) => [
     item.posto,
     item.nomeEnfermeira,
