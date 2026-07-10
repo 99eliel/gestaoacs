@@ -68,3 +68,18 @@ COMO SUBIR NO GITHUB PAGES
 
 OBSERVAÇÃO IMPORTANTE
 Não cadastre dados de pacientes no sistema. Use apenas quantidade de visitas por ACS e total de cidadãos cadastrados no mês.
+
+
+NOVIDADES DA VERSÃO 4
+- Aviso fixo no topo: Sistema desenvolvido e emprestado por Eliel do Carmo.
+- Botão para instalar o sistema como app no celular/PC.
+- Manifest atualizado com ícones 192x192 e 512x512.
+- Service worker adicionado para habilitar instalação PWA e cache básico dos arquivos.
+
+ARQUIVOS NOVOS DESTA VERSÃO
+- service-worker.js
+- icon-192.png
+- icon-512.png
+
+OBSERVAÇÃO SOBRE ATUALIZAÇÕES
+Ao substituir os arquivos no GitHub Pages, se o celular ainda mostrar uma versão antiga, abra o sistema, atualize a página e aguarde alguns segundos. O service worker desta versão foi configurado para buscar os arquivos novos pela internet e atualizar o cache.

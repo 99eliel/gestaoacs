@@ -93,8 +93,58 @@ const els = {
   adminTotalPostos: $("admin-total-postos"),
   adminTotalEnfermeiras: $("admin-total-enfermeiras"),
   adminTotalAcs: $("admin-total-acs"),
-  adminTotalVisitas: $("admin-total-visitas")
+  adminTotalVisitas: $("admin-total-visitas"),
+  installButton: $("btn-install-app")
 };
+
+
+let deferredInstallPrompt = null;
+
+function isRunningAsInstalledApp() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function updateInstallButton() {
+  if (!els.installButton) return;
+  els.installButton.classList.toggle("hidden", isRunningAsInstalledApp());
+}
+
+async function installApp() {
+  if (isRunningAsInstalledApp()) {
+    alert("O sistema já está aberto como aplicativo instalado.");
+    updateInstallButton();
+    return;
+  }
+
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt = null;
+    updateInstallButton();
+    return;
+  }
+
+  alert("Para instalar: no celular, abra este sistema pelo Chrome/Edge, toque no menu de três pontos e escolha 'Instalar app' ou 'Adicionar à tela inicial'. No iPhone, use o botão Compartilhar e depois 'Adicionar à Tela de Início'.");
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallButton();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  updateInstallButton();
+});
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js").catch((error) => {
+      console.warn("Service worker não registrado:", error);
+    });
+  });
+}
 
 function showMessage(el, text, isError = false) {
   el.textContent = text;
@@ -762,6 +812,8 @@ function bindEvents() {
   $("btn-save-visits").addEventListener("click", saveVisits);
   $("btn-add-admin").addEventListener("click", addAdminManual);
   $("btn-export-csv").addEventListener("click", exportCsv);
+  if (els.installButton) els.installButton.addEventListener("click", installApp);
+  updateInstallButton();
 
   els.searchAcs.addEventListener("input", renderAcsList);
   els.yearSelect.addEventListener("change", renderMonthsForSelectedAcs);

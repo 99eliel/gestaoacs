@@ -20,6 +20,41 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   background: var(--bg);
   color: var(--text);
+  min-height: 100vh;
+}
+
+.developer-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background: linear-gradient(90deg, #134e4a 0%, #0f766e 100%);
+  color: white;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  box-shadow: 0 8px 24px rgba(15, 76, 70, 0.22);
+}
+
+.banner-install-btn {
+  background: white;
+  color: var(--primary-dark);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  padding: 9px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+  white-space: nowrap;
+}
+
+.banner-install-btn:hover {
+  filter: brightness(0.96);
 }
 
 .hidden {
@@ -27,7 +62,7 @@ body {
 }
 
 .loading {
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   display: grid;
   place-items: center;
   font-weight: 700;
@@ -35,7 +70,7 @@ body {
 }
 
 .auth-container {
-  min-height: 100vh;
+  min-height: calc(100vh - 56px);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -429,5 +464,20 @@ th {
   .admin-item {
     align-items: flex-start;
     flex-direction: column;
+  }
+}
+
+
+@media (max-width: 520px) {
+  .developer-banner {
+    padding: 10px 12px;
+    font-size: 15px;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .banner-install-btn {
+    width: 100%;
+    max-width: 260px;
   }
 }
