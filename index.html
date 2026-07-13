@@ -4,21 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Controle de Visitas ACS</title>
-  <link rel="stylesheet" href="style.css?v=20260713-v8-acs" />
-  <link rel="manifest" href="manifest.json?v=20260713-v8-acs" />
+  <link rel="stylesheet" href="style.css?v=20260713-v10-editar-lancamentos" />
+  <link rel="manifest" href="manifest.json?v=20260713-v10-editar-lancamentos" />
   <meta name="theme-color" content="#04756f" />
   <meta name="description" content="Sistema de Controle de Visitas ACS" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Visitas ACS" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v8-acs" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v10-editar-lancamentos" />
 </head>
 <body>
   <div class="developer-banner">
     <div class="developer-text">
       <span class="shield-icon" aria-hidden="true">✓</span>
       <span>Sistema desenvolvido e emprestado por <strong>Eliel do Carmo</strong></span>
-      <small id="app-version" class="app-version">v8</small>
+      <small id="app-version" class="app-version">v10</small>
     </div>
     <div class="banner-actions">
       <button id="btn-install-app" type="button" class="banner-btn install hidden">⬇ Instalar app</button>
@@ -116,10 +116,6 @@
           <span>⌂</span>
           <strong>Dashboard</strong>
         </button>
-        <button id="tab-admin" class="tab-btn hidden" type="button">
-          <span>▣</span>
-          <strong>Admin</strong>
-        </button>
         <button class="tab-btn ghost" type="button" data-scroll-target="acs-list">
           <span>👥</span>
           <strong>ACS</strong>
@@ -127,6 +123,14 @@
         <button class="tab-btn ghost" type="button" data-scroll-target="visitas-card">
           <span>▦</span>
           <strong>Lançamentos</strong>
+        </button>
+        <button id="tab-relatorios" class="tab-btn" type="button">
+          <span>▤</span>
+          <strong>Relatórios</strong>
+        </button>
+        <button id="tab-admin" class="tab-btn hidden" type="button">
+          <span>▣</span>
+          <strong>Admin</strong>
         </button>
       </nav>
 
@@ -235,9 +239,9 @@
                 </div>
               </div>
 
-              <div class="info-box">Informe os dados de cada mês. A cobertura é calculada automaticamente usando visitas ÷ cidadãos cadastrados.</div>
+              <div class="info-box">Informe ou corrija os dados de cada mês. A cobertura é calculada automaticamente usando visitas ÷ cidadãos cadastrados.</div>
               <div id="months-grid" class="months-grid"></div>
-              <button id="btn-save-visits" class="primary-btn big-save">Salvar visitas do ano</button>
+              <button id="btn-save-visits" class="primary-btn big-save">Salvar/atualizar visitas do ano</button>
               <p id="visits-message" class="message"></p>
             </div>
 
@@ -246,6 +250,161 @@
               <h2>Lançamento mensal</h2>
               <p>Cadastre ou selecione um ACS na lista ao lado para abrir os 12 meses com os campos de cidadãos, visitas e cobertura.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="relatorios-panel" class="panel hidden">
+        <div class="reports-hero card">
+          <div>
+            <p class="eyebrow">Relatórios inteligentes</p>
+            <h2>Relatórios de visitas e cobertura</h2>
+            <p>Gere relatórios mensais, por período, por ACS específico, ranking de cobertura e consolidados. Enfermeiras visualizam apenas seus ACS; administradores visualizam todos os postos.</p>
+          </div>
+          <div class="report-actions">
+            <button id="btn-run-report" class="primary-btn">Gerar relatório</button>
+            <button id="btn-export-report-csv" class="secondary-btn">Exportar CSV</button>
+            <button id="btn-print-report" class="secondary-btn">Imprimir</button>
+          </div>
+        </div>
+
+        <div class="kpi-grid report-kpis">
+          <article class="mini-card"><span>Total de visitas</span><strong id="report-total-visits">0</strong></article>
+          <article class="mini-card"><span>Cidadãos considerados</span><strong id="report-total-citizens">0</strong></article>
+          <article class="mini-card"><span>Cobertura geral</span><strong id="report-coverage">0%</strong></article>
+          <article class="mini-card"><span>ACS no relatório</span><strong id="report-total-acs">0</strong></article>
+        </div>
+
+        <div class="card report-builder-card">
+          <div class="section-title-row wrap report-head">
+            <div>
+              <h2>Configurar relatório</h2>
+              <p class="muted">Escolha o tipo de relatório e o período. Para relatório de 3 meses, selecione o mês inicial e final.</p>
+            </div>
+          </div>
+
+          <div class="report-controls">
+            <div>
+              <label for="report-type">Tipo de relatório</label>
+              <select id="report-type">
+                <option value="monthly_all">Mensal de todos os ACS</option>
+                <option value="period_all">Período de todos os ACS</option>
+                <option value="period_acs">Período de um ACS específico</option>
+                <option value="annual_acs">Ano completo de um ACS</option>
+                <option value="ranking_coverage">Ranking de cobertura</option>
+                <option value="consolidated">Consolidado por posto/enfermeira</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="report-year-select">Ano</label>
+              <select id="report-year-select"></select>
+            </div>
+
+            <div>
+              <label for="report-start-month">Mês inicial</label>
+              <select id="report-start-month">
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="report-end-month">Mês final</label>
+              <select id="report-end-month">
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="report-acs-select">ACS</label>
+              <select id="report-acs-select">
+                <option value="">Todos os ACS</option>
+              </select>
+            </div>
+
+            <div class="report-search-field">
+              <label for="report-search">Pesquisa</label>
+              <input id="report-search" type="text" placeholder="Filtrar por posto, enfermeira, ACS ou microárea" />
+            </div>
+          </div>
+
+          <div id="report-help" class="info-box">Mensal de todos os ACS: mostra cada ACS no mês selecionado.</div>
+          <p id="report-message" class="message"></p>
+        </div>
+
+        <div class="reports-two-columns">
+          <div class="card report-summary-card">
+            <div class="card-title no-margin">
+              <div class="title-icon">↗</div>
+              <div>
+                <h2>Leitura rápida</h2>
+                <p id="report-summary-text" class="muted">Gere um relatório para visualizar os principais indicadores.</p>
+              </div>
+            </div>
+            <div id="report-highlights" class="report-highlights empty-box">Sem dados carregados ainda.</div>
+          </div>
+
+          <div class="card report-summary-card">
+            <div class="card-title no-margin">
+              <div class="title-icon">◎</div>
+              <div>
+                <h2>Melhores coberturas</h2>
+                <p class="muted">Ranking rápido do período filtrado.</p>
+              </div>
+            </div>
+            <div id="report-ranking-list" class="report-ranking-list empty-box">Sem dados carregados ainda.</div>
+          </div>
+        </div>
+
+        <div class="card report-card advanced-report-card">
+          <div class="section-title-row wrap report-head">
+            <div>
+              <h2 id="report-title">Resultado do relatório</h2>
+              <p id="report-subtitle" class="muted">Os resultados aparecerão aqui.</p>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table id="report-table">
+              <thead>
+                <tr>
+                  <th>Período</th>
+                  <th>Posto</th>
+                  <th>Enfermeira</th>
+                  <th>ACS</th>
+                  <th>Microárea</th>
+                  <th>Cidadãos</th>
+                  <th>Visitas</th>
+                  <th>Cobertura</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="report-table-body">
+                <tr><td colspan="9">Configure e gere um relatório.</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
@@ -337,10 +496,11 @@
                   <th>Mês</th>
                   <th>Visitas</th>
                   <th>Cobertura</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="admin-report-body">
-                <tr><td colspan="8">Nenhum dado encontrado.</td></tr>
+                <tr><td colspan="9">Nenhum dado encontrado.</td></tr>
               </tbody>
             </table>
           </div>
@@ -349,6 +509,6 @@
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260713-v8-acs"></script>
+  <script type="module" src="app.js?v=20260713-v10-editar-lancamentos"></script>
 </body>
 </html>

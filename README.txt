@@ -1,4 +1,4 @@
-SISTEMA DE CONTROLE DE VISITAS ACS - V8 DESIGN PROFISSIONAL
+SISTEMA DE CONTROLE DE VISITAS ACS - V10 EDIÇÃO DE LANÇAMENTOS
 
 Projeto Firebase configurado:
 gestaoacs-f4bdd
@@ -62,3 +62,25 @@ Firebase > Firestore Database > Rules > Publish
 
 OBSERVAÇÃO
 Não cadastre dados de pacientes. O sistema deve guardar apenas ACS, posto, mês, total de cidadãos cadastrados no mês e total de visitas.
+
+
+VERSÃO v9.0.0-20260713
+- Nova aba Relatórios para enfermeiras e administradores.
+- Relatório mensal de todos os ACS.
+- Relatório por período de todos os ACS.
+- Relatório de 2, 3 ou mais meses de um ACS específico.
+- Relatório anual de ACS específico.
+- Ranking de cobertura.
+- Consolidado por posto/enfermeira.
+- Exportação CSV e impressão do relatório atual.
+- Enfermeira visualiza apenas seus próprios ACS e lançamentos.
+- Admin visualiza todos os postos, enfermeiras e ACS.
+
+
+VERSÃO v10.0.0-20260713
+- Nova opção Editar nos relatórios e no relatório geral do admin.
+- Enfermeira pode abrir um lançamento salvo, corrigir cidadãos/visitas e salvar novamente.
+- Admin também pode editar lançamentos de qualquer posto pelo relatório geral.
+- Ao clicar em Editar, o sistema abre automaticamente o ACS, o ano e destaca o mês escolhido.
+- Botão atualizado para Salvar/atualizar visitas do ano.
+- Versionamento atualizado para limpar cache antigo no GitHub Pages/PWA.

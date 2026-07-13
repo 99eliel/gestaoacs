@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v8.0.0-20260713";
+const APP_VERSION = "v10.0.0-20260713";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
@@ -57,6 +57,8 @@ let acsCache = [];
 let selectedAcs = null;
 let unsubscribeAcs = null;
 let adminReportData = [];
+let reportsRawData = [];
+let reportsRenderedRows = [];
 
 const $ = (id) => document.getElementById(id);
 
@@ -88,7 +90,9 @@ const els = {
   adminList: $("admin-list"),
   tabEnfermeira: $("tab-enfermeira"),
   tabAdmin: $("tab-admin"),
+  tabRelatorios: $("tab-relatorios"),
   enfermeiraPanel: $("enfermeira-panel"),
+  relatoriosPanel: $("relatorios-panel"),
   adminPanel: $("admin-panel"),
   adminYearSelect: $("admin-year-select"),
   adminMonthSelect: $("admin-month-select"),
@@ -98,9 +102,28 @@ const els = {
   adminTotalEnfermeiras: $("admin-total-enfermeiras"),
   adminTotalAcs: $("admin-total-acs"),
   adminTotalVisitas: $("admin-total-visitas"),
+  reportType: $("report-type"),
+  reportYearSelect: $("report-year-select"),
+  reportStartMonth: $("report-start-month"),
+  reportEndMonth: $("report-end-month"),
+  reportAcsSelect: $("report-acs-select"),
+  reportSearch: $("report-search"),
+  reportMessage: $("report-message"),
+  reportHelp: $("report-help"),
+  reportTitle: $("report-title"),
+  reportSubtitle: $("report-subtitle"),
+  reportTableBody: $("report-table-body"),
+  reportTotalVisits: $("report-total-visits"),
+  reportTotalCitizens: $("report-total-citizens"),
+  reportCoverage: $("report-coverage"),
+  reportTotalAcs: $("report-total-acs"),
+  reportSummaryText: $("report-summary-text"),
+  reportHighlights: $("report-highlights"),
+  reportRankingList: $("report-ranking-list"),
   installButton: $("btn-install-app"),
   updateButton: $("btn-update-app"),
-  appVersion: $("app-version")
+  appVersion: $("app-version"),
+  emptyLaunchHint: $("empty-launch-hint")
 };
 
 
@@ -236,9 +259,9 @@ function currentMonthNumber() {
 
 function fillYearSelects() {
   const year = currentYear();
-  const years = [year - 1, year, year + 1];
+  const years = [year - 2, year - 1, year, year + 1];
 
-  [els.yearSelect, els.adminYearSelect].forEach((select) => {
+  [els.yearSelect, els.adminYearSelect, els.reportYearSelect].filter(Boolean).forEach((select) => {
     select.innerHTML = "";
     years.forEach((ano) => {
       const option = document.createElement("option");
@@ -249,7 +272,9 @@ function fillYearSelects() {
     });
   });
 
-  els.adminMonthSelect.value = String(currentMonthNumber());
+  if (els.adminMonthSelect) els.adminMonthSelect.value = String(currentMonthNumber());
+  if (els.reportStartMonth) els.reportStartMonth.value = String(currentMonthNumber());
+  if (els.reportEndMonth) els.reportEndMonth.value = String(currentMonthNumber());
 }
 
 function showAuth() {
@@ -266,12 +291,19 @@ function showApp() {
 
 function openTab(tab) {
   const isAdminTab = tab === "admin";
-  els.tabEnfermeira.classList.toggle("active", !isAdminTab);
+  const isReportsTab = tab === "relatorios";
+  const isDashboardTab = !isAdminTab && !isReportsTab;
+
+  els.tabEnfermeira.classList.toggle("active", isDashboardTab);
+  if (els.tabRelatorios) els.tabRelatorios.classList.toggle("active", isReportsTab);
   els.tabAdmin.classList.toggle("active", isAdminTab);
-  els.enfermeiraPanel.classList.toggle("hidden", isAdminTab);
+
+  els.enfermeiraPanel.classList.toggle("hidden", !isDashboardTab);
+  if (els.relatoriosPanel) els.relatoriosPanel.classList.toggle("hidden", !isReportsTab);
   els.adminPanel.classList.toggle("hidden", !isAdminTab);
 
   if (isAdminTab) loadAdminDashboard();
+  if (isReportsTab) loadReportsData();
 }
 
 function emailKey(email) {
@@ -456,6 +488,7 @@ function listenAcs() {
       .sort((a, b) => String(a.nome).localeCompare(String(b.nome)));
 
     renderAcsList();
+    populateReportAcsOptions();
     els.totalAcs.textContent = acsCache.length;
     loadCurrentMonthTotal();
   }, (error) => {
@@ -510,9 +543,10 @@ function renderAcsList() {
 async function selectAcs(acs) {
   selectedAcs = acs;
   els.visitasCard.classList.remove("hidden");
+  if (els.emptyLaunchHint) els.emptyLaunchHint.classList.add("hidden");
   showMessage(els.visitsMessage, "");
   els.selectedAcsTitle.textContent = `Lançamento de visitas mensais`;
-  els.selectedAcsSubtitle.textContent = `ACS selecionado: ${acs.nome} • Posto: ${acs.posto} • Microárea: ${acs.microarea || "não informada"}`;
+  els.selectedAcsSubtitle.textContent = `ACS selecionado: ${acs.nome} • Posto: ${acs.posto} • Microárea: ${acs.microarea || "não informada"} • Para corrigir, altere os campos e salve novamente.`;
   renderAcsList();
 
   // Abre os 12 meses imediatamente, antes mesmo de consultar o Firestore.
@@ -583,6 +617,7 @@ function montarCamposMensais(visitasPorMes) {
     const percentualAtual = calcularPercentual(quantidadeAtual, pessoasAtual);
     const box = document.createElement("div");
     box.className = "month-box";
+    box.dataset.monthBox = String(mesNumero);
     box.innerHTML = `
       <label>${mesNome}</label>
       <div class="month-fields">
@@ -686,11 +721,14 @@ async function saveVisits() {
         ano,
         mes,
         quantidade,
-        atualizadoEm: serverTimestamp()
+        atualizadoEm: serverTimestamp(),
+        atualizadoPor: currentUser.uid,
+        atualizadoPorEmail: currentUser.email || "",
+        atualizadoPorNome: currentProfile.nome || currentUser.email || ""
       }, { merge: true });
     }
 
-    showMessage(els.visitsMessage, "Lançamentos mensais salvos com sucesso!");
+    showMessage(els.visitsMessage, "Lançamentos salvos/atualizados com sucesso!");
     loadCurrentMonthTotal();
   } catch (error) {
     showMessage(els.visitsMessage, traduzErroFirebase(error), true);
@@ -730,6 +768,442 @@ async function loadCurrentMonthTotal() {
     els.totalCurrentMonth.textContent = "-";
     if (els.avgCurrentCoverage) els.avgCurrentCoverage.textContent = "-";
   }
+}
+
+
+function monthName(mes) {
+  return meses[(Number(mes) || 1) - 1] || "-";
+}
+
+function periodoLabel(inicio, fim, ano) {
+  if (inicio === 1 && fim === 12) return `Ano completo de ${ano}`;
+  if (inicio === fim) return `${monthName(inicio)} de ${ano}`;
+  return `${monthName(inicio)} a ${monthName(fim)} de ${ano}`;
+}
+
+function populateReportAcsOptions() {
+  if (!els.reportAcsSelect) return;
+
+  const currentValue = els.reportAcsSelect.value;
+  els.reportAcsSelect.innerHTML = `<option value="">Todos os ACS</option>`;
+
+  acsCache
+    .slice()
+    .sort((a, b) => String(a.nome).localeCompare(String(b.nome)))
+    .forEach((acs) => {
+      const option = document.createElement("option");
+      option.value = acs.id;
+      option.textContent = `${acs.nome}${acs.microarea ? ` — Microárea ${acs.microarea}` : ""}${currentProfile?.tipo === "admin" ? ` — ${acs.posto}` : ""}`;
+      els.reportAcsSelect.appendChild(option);
+    });
+
+  if ([...els.reportAcsSelect.options].some((option) => option.value === currentValue)) {
+    els.reportAcsSelect.value = currentValue;
+  }
+}
+
+function updateReportHelp() {
+  if (!els.reportHelp || !els.reportType) return;
+  const type = els.reportType.value;
+  const messages = {
+    monthly_all: "Mensal de todos os ACS: mostra cada ACS no mês inicial selecionado.",
+    period_all: "Período de todos os ACS: mostra todos os lançamentos entre o mês inicial e final.",
+    period_acs: "Período de um ACS específico: ideal para ver 2, 3 ou mais meses de apenas um ACS.",
+    annual_acs: "Ano completo de um ACS: mostra janeiro a dezembro do ACS selecionado.",
+    ranking_coverage: "Ranking de cobertura: consolida o período e ordena os ACS pela maior cobertura.",
+    consolidated: "Consolidado por posto/enfermeira: agrupa os dados do período por unidade e responsável."
+  };
+  els.reportHelp.textContent = messages[type] || "Configure o relatório e clique em Gerar relatório.";
+
+  const precisaAcs = type === "period_acs" || type === "annual_acs";
+  if (els.reportAcsSelect) els.reportAcsSelect.parentElement.classList.toggle("required-filter", precisaAcs);
+
+  if (type === "monthly_all") {
+    els.reportEndMonth.value = els.reportStartMonth.value;
+  }
+
+  if (type === "annual_acs") {
+    els.reportStartMonth.value = "1";
+    els.reportEndMonth.value = "12";
+  }
+}
+
+async function loadReportsData() {
+  if (!currentUser || !currentProfile || !els.reportTableBody) return;
+
+  populateReportAcsOptions();
+  updateReportHelp();
+  showMessage(els.reportMessage, "Carregando dados do relatório...");
+
+  try {
+    let snap;
+    if (currentProfile.tipo === "admin") {
+      snap = await getDocs(collection(db, "visitas"));
+    } else {
+      snap = await getDocs(query(collection(db, "visitas"), where("enfermeiraId", "==", currentUser.uid)));
+    }
+
+    reportsRawData = [];
+    snap.forEach((item) => reportsRawData.push({ id: item.id, ...item.data() }));
+
+    showMessage(els.reportMessage, "");
+    renderReports();
+  } catch (error) {
+    showMessage(els.reportMessage, `Erro ao carregar relatórios: ${traduzErroFirebase(error)}`, true);
+  }
+}
+
+function getReportConfig() {
+  const type = els.reportType.value;
+  const ano = Number(els.reportYearSelect.value);
+  let inicio = Number(els.reportStartMonth.value);
+  let fim = Number(els.reportEndMonth.value);
+  const acsId = els.reportAcsSelect.value;
+  const search = normalizeText(els.reportSearch.value).toLowerCase();
+
+  if (type === "monthly_all") fim = inicio;
+  if (type === "annual_acs") {
+    inicio = 1;
+    fim = 12;
+  }
+
+  if (inicio > fim) [inicio, fim] = [fim, inicio];
+
+  return { type, ano, inicio, fim, acsId, search };
+}
+
+function getFilteredReportVisits(config) {
+  const needsAcs = config.type === "period_acs" || config.type === "annual_acs";
+  if (needsAcs && !config.acsId) {
+    showMessage(els.reportMessage, "Escolha um ACS para esse tipo de relatório.", true);
+    return [];
+  }
+
+  showMessage(els.reportMessage, "");
+
+  return reportsRawData
+    .filter((item) => Number(item.ano) === config.ano)
+    .filter((item) => Number(item.mes) >= config.inicio && Number(item.mes) <= config.fim)
+    .filter((item) => !config.acsId || item.acsId === config.acsId)
+    .filter((item) => Number(item.quantidade || 0) > 0 || Number(item.pessoasCadastradas || 0) > 0)
+    .filter((item) => {
+      if (!config.search) return true;
+      const text = `${item.posto || ""} ${item.nomeEnfermeira || ""} ${item.nomeAcs || ""} ${getAcsMicroarea(item.acsId)}`.toLowerCase();
+      return text.includes(config.search);
+    });
+}
+
+function getAcsMicroarea(acsId) {
+  const acs = acsCache.find((item) => item.id === acsId);
+  return acs?.microarea || "";
+}
+
+function aggregateRowsBy(visits, keyFn, labelFn) {
+  const map = new Map();
+
+  visits.forEach((item) => {
+    const key = keyFn(item);
+    if (!map.has(key)) {
+      map.set(key, {
+        periodo: "",
+        posto: item.posto || "-",
+        nomeEnfermeira: item.nomeEnfermeira || "-",
+        nomeAcs: item.nomeAcs || "-",
+        microarea: getAcsMicroarea(item.acsId),
+        pessoasCadastradas: 0,
+        quantidade: 0,
+        meses: new Set(),
+        coberturaPercentual: 0,
+        sortName: "",
+        acsId: item.acsId || "",
+        editavel: false
+      });
+    }
+
+    const row = map.get(key);
+    row.pessoasCadastradas += Number(item.pessoasCadastradas || 0);
+    row.quantidade += Number(item.quantidade || 0);
+    row.meses.add(Number(item.mes));
+    labelFn(row, item);
+  });
+
+  return [...map.values()].map((row) => {
+    row.coberturaPercentual = calcularPercentual(row.quantidade, row.pessoasCadastradas);
+    row.periodo = row.periodo || `${row.meses.size} mês(es)`;
+    return row;
+  });
+}
+
+function buildReportRows(visits, config) {
+  if (config.type === "ranking_coverage") {
+    return aggregateRowsBy(
+      visits,
+      (item) => item.acsId,
+      (row, item) => {
+        row.periodo = periodoLabel(config.inicio, config.fim, config.ano);
+        row.posto = item.posto || "-";
+        row.nomeEnfermeira = item.nomeEnfermeira || "-";
+        row.nomeAcs = item.nomeAcs || "-";
+        row.microarea = getAcsMicroarea(item.acsId);
+        row.sortName = item.nomeAcs || "";
+      }
+    ).sort((a, b) => Number(b.coberturaPercentual) - Number(a.coberturaPercentual) || String(a.nomeAcs).localeCompare(String(b.nomeAcs)));
+  }
+
+  if (config.type === "consolidated") {
+    return aggregateRowsBy(
+      visits,
+      (item) => `${item.posto || ""}|${item.nomeEnfermeira || ""}`,
+      (row, item) => {
+        row.periodo = periodoLabel(config.inicio, config.fim, config.ano);
+        row.posto = item.posto || "-";
+        row.nomeEnfermeira = item.nomeEnfermeira || "-";
+        row.nomeAcs = "Todos os ACS";
+        row.microarea = "-";
+        row.sortName = `${item.posto || ""} ${item.nomeEnfermeira || ""}`;
+      }
+    ).sort((a, b) => String(a.posto).localeCompare(String(b.posto)) || String(a.nomeEnfermeira).localeCompare(String(b.nomeEnfermeira)));
+  }
+
+  return visits
+    .map((item) => ({
+      periodo: `${monthName(item.mes)} de ${item.ano}`,
+      acsId: item.acsId || "",
+      ano: Number(item.ano || config.ano),
+      visitId: item.id || "",
+      editavel: true,
+      posto: item.posto || "-",
+      nomeEnfermeira: item.nomeEnfermeira || "-",
+      nomeAcs: item.nomeAcs || "-",
+      microarea: getAcsMicroarea(item.acsId) || "-",
+      pessoasCadastradas: Number(item.pessoasCadastradas || 0),
+      quantidade: Number(item.quantidade || 0),
+      coberturaPercentual: Number(item.coberturaPercentual ?? calcularPercentual(item.quantidade, item.pessoasCadastradas)),
+      mes: Number(item.mes || 0),
+      sortName: item.nomeAcs || ""
+    }))
+    .sort((a, b) => String(a.posto).localeCompare(String(b.posto)) || String(a.nomeAcs).localeCompare(String(b.nomeAcs)) || Number(a.mes) - Number(b.mes));
+}
+
+function reportTypeTitle(type) {
+  const titles = {
+    monthly_all: "Relatório mensal de todos os ACS",
+    period_all: "Relatório por período de todos os ACS",
+    period_acs: "Relatório por período de ACS específico",
+    annual_acs: "Relatório anual de ACS específico",
+    ranking_coverage: "Ranking de cobertura dos ACS",
+    consolidated: "Relatório consolidado por posto/enfermeira"
+  };
+  return titles[type] || "Relatório";
+}
+
+function renderReports() {
+  if (!els.reportTableBody) return;
+
+  updateReportHelp();
+  const config = getReportConfig();
+  const visits = getFilteredReportVisits(config);
+  reportsRenderedRows = buildReportRows(visits, config);
+
+  const totalVisitas = reportsRenderedRows.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+  const totalCidadaos = reportsRenderedRows.reduce((sum, item) => sum + Number(item.pessoasCadastradas || 0), 0);
+  const coberturaGeral = calcularPercentual(totalVisitas, totalCidadaos);
+  const acsUnicos = new Set(visits.map((item) => item.acsId).filter(Boolean));
+
+  els.reportTotalVisits.textContent = totalVisitas;
+  els.reportTotalCitizens.textContent = totalCidadaos;
+  els.reportCoverage.textContent = `${coberturaGeral}%`;
+  els.reportTotalAcs.textContent = acsUnicos.size;
+  els.reportTitle.textContent = reportTypeTitle(config.type);
+  els.reportSubtitle.textContent = `${periodoLabel(config.inicio, config.fim, config.ano)} • ${currentProfile.tipo === "admin" ? "Todos os postos conforme filtros" : `Posto ${currentProfile.posto}`}`;
+
+  renderReportTable(reportsRenderedRows);
+  renderReportInsights(reportsRenderedRows, visits, config, totalVisitas, totalCidadaos, coberturaGeral);
+}
+
+function renderReportTable(rows) {
+  if (!rows.length) {
+    els.reportTableBody.innerHTML = `<tr><td colspan="9">Nenhum dado encontrado para esse filtro.</td></tr>`;
+    return;
+  }
+
+  els.reportTableBody.innerHTML = rows.map((item) => {
+    const percent = Number(item.coberturaPercentual || 0);
+    return `
+      <tr>
+        <td>${escapeHtml(item.periodo)}</td>
+        <td>${escapeHtml(item.posto)}</td>
+        <td>${escapeHtml(item.nomeEnfermeira)}</td>
+        <td><strong>${escapeHtml(item.nomeAcs)}</strong></td>
+        <td>${escapeHtml(item.microarea || "-")}</td>
+        <td>${Number(item.pessoasCadastradas || 0)}</td>
+        <td><strong>${Number(item.quantidade || 0)}</strong></td>
+        <td><span class="coverage-chip ${coberturaClasse(percent)}">${percent}%</span></td>
+        <td>${item.editavel && item.acsId && item.ano && item.mes ? `<button type="button" class="table-edit-btn" data-edit-launch="1" data-acs-id="${escapeHtml(item.acsId)}" data-ano="${Number(item.ano)}" data-mes="${Number(item.mes)}">Editar</button>` : `<span class="muted">-</span>`}</td>
+      </tr>
+    `;
+  }).join("");
+  bindEditLaunchButtons(els.reportTableBody, reportsRenderedRows);
+}
+
+function renderReportInsights(rows, visits, config, totalVisitas, totalCidadaos, coberturaGeral) {
+  if (!rows.length) {
+    els.reportSummaryText.textContent = "Nenhum lançamento encontrado para o filtro escolhido.";
+    els.reportHighlights.innerHTML = `<div class="empty-box">Tente mudar o período, escolher outro ACS ou limpar a pesquisa.</div>`;
+    els.reportRankingList.innerHTML = `<div class="empty-box">Sem dados para ranking.</div>`;
+    return;
+  }
+
+  const maior = [...rows].sort((a, b) => Number(b.coberturaPercentual || 0) - Number(a.coberturaPercentual || 0))[0];
+  const menor = [...rows].sort((a, b) => Number(a.coberturaPercentual || 0) - Number(b.coberturaPercentual || 0))[0];
+  const totalRegistros = visits.length;
+
+  els.reportSummaryText.textContent = `${reportTypeTitle(config.type)} — ${periodoLabel(config.inicio, config.fim, config.ano)}.`;
+  els.reportHighlights.innerHTML = `
+    <div class="highlight-line"><span>Registros considerados</span><strong>${totalRegistros}</strong></div>
+    <div class="highlight-line"><span>Visitas no filtro</span><strong>${totalVisitas}</strong></div>
+    <div class="highlight-line"><span>Cidadãos no filtro</span><strong>${totalCidadaos}</strong></div>
+    <div class="highlight-line"><span>Cobertura geral</span><strong>${coberturaGeral}%</strong></div>
+    <div class="highlight-line"><span>Maior cobertura</span><strong>${escapeHtml(maior.nomeAcs)} • ${Number(maior.coberturaPercentual || 0)}%</strong></div>
+    <div class="highlight-line"><span>Menor cobertura</span><strong>${escapeHtml(menor.nomeAcs)} • ${Number(menor.coberturaPercentual || 0)}%</strong></div>
+  `;
+
+  const ranking = aggregateRowsBy(
+    visits,
+    (item) => item.acsId,
+    (row, item) => {
+      row.periodo = periodoLabel(config.inicio, config.fim, config.ano);
+      row.posto = item.posto || "-";
+      row.nomeEnfermeira = item.nomeEnfermeira || "-";
+      row.nomeAcs = item.nomeAcs || "-";
+      row.microarea = getAcsMicroarea(item.acsId);
+    }
+  ).sort((a, b) => Number(b.coberturaPercentual || 0) - Number(a.coberturaPercentual || 0)).slice(0, 5);
+
+  els.reportRankingList.innerHTML = ranking.map((item, index) => `
+    <div class="ranking-item">
+      <span class="rank-number">${index + 1}</span>
+      <div>
+        <strong>${escapeHtml(item.nomeAcs)}</strong>
+        <small>${escapeHtml(item.posto)} • ${Number(item.quantidade || 0)} visitas</small>
+      </div>
+      <span class="coverage-chip ${coberturaClasse(item.coberturaPercentual)}">${Number(item.coberturaPercentual || 0)}%</span>
+    </div>
+  `).join("");
+}
+
+function ensureYearOption(select, ano) {
+  if (!select || !ano) return;
+  const exists = [...select.options].some((option) => Number(option.value) === Number(ano));
+  if (!exists) {
+    const option = document.createElement("option");
+    option.value = String(ano);
+    option.textContent = String(ano);
+    select.appendChild(option);
+  }
+}
+
+function findVisitSourceRow(acsId, ano, mes) {
+  const id = String(acsId || "");
+  const year = Number(ano);
+  const month = Number(mes);
+  return reportsRawData.find((item) => item.acsId === id && Number(item.ano) === year && Number(item.mes) === month)
+    || adminReportData.find((item) => item.acsId === id && Number(item.ano) === year && Number(item.mes) === month)
+    || {};
+}
+
+function buildAcsFallback(acsId, sourceRow = {}) {
+  return {
+    id: acsId,
+    nome: sourceRow.nomeAcs || "ACS selecionado",
+    microarea: getAcsMicroarea(acsId) || sourceRow.microarea || "",
+    posto: sourceRow.posto || currentProfile?.posto || "-",
+    enfermeiraId: sourceRow.enfermeiraId || currentUser?.uid || "",
+    enfermeiraNome: sourceRow.nomeEnfermeira || currentProfile?.nome || ""
+  };
+}
+
+function highlightMonthForEditing(mes) {
+  const monthBox = els.monthsGrid?.querySelector(`[data-month-box="${Number(mes)}"]`);
+  if (!monthBox) return;
+
+  els.monthsGrid.querySelectorAll(".editing-month").forEach((box) => box.classList.remove("editing-month"));
+  monthBox.classList.add("editing-month");
+  monthBox.scrollIntoView({ behavior: "smooth", block: "center" });
+
+  const visitasInput = monthBox.querySelector('input[data-field="visitas"]');
+  const pessoasInput = monthBox.querySelector('input[data-field="pessoas"]');
+  setTimeout(() => {
+    (visitasInput || pessoasInput)?.focus();
+    (visitasInput || pessoasInput)?.select?.();
+  }, 350);
+}
+
+async function openEditLaunch(acsId, ano, mes) {
+  if (!acsId || !ano || !mes) {
+    alert("Não foi possível identificar o lançamento para edição.");
+    return;
+  }
+
+  const sourceRow = findVisitSourceRow(acsId, ano, mes);
+  const acs = acsCache.find((item) => item.id === acsId) || buildAcsFallback(acsId, sourceRow);
+
+  ensureYearOption(els.yearSelect, ano);
+  els.yearSelect.value = String(ano);
+  openTab("enfermeira");
+  await selectAcs(acs);
+  highlightMonthForEditing(mes);
+  showMessage(els.visitsMessage, `Editando ${monthName(mes)} de ${ano}. Corrija cidadãos ou visitas e clique em Salvar visitas do ano.`);
+}
+
+function bindEditLaunchButtons(container) {
+  if (!container) return;
+
+  container.querySelectorAll("[data-edit-launch]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await openEditLaunch(button.dataset.acsId, Number(button.dataset.ano), Number(button.dataset.mes));
+    });
+  });
+}
+
+
+function exportReportCsv() {
+  if (!reportsRenderedRows.length) {
+    alert("Nenhum dado para exportar no relatório atual.");
+    return;
+  }
+
+  const header = ["Periodo", "Posto", "Enfermeira", "ACS", "Microarea", "Cidadaos", "Visitas", "Cobertura percentual"];
+  const rows = reportsRenderedRows.map((item) => [
+    item.periodo,
+    item.posto,
+    item.nomeEnfermeira,
+    item.nomeAcs,
+    item.microarea,
+    Number(item.pessoasCadastradas || 0),
+    Number(item.quantidade || 0),
+    `${Number(item.coberturaPercentual || 0)}%`
+  ]);
+
+  const csv = [header, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(";"))
+    .join("\n");
+
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `relatorio-acs-${Date.now()}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function printCurrentReport() {
+  if (!reportsRenderedRows.length) {
+    alert("Gere um relatório antes de imprimir.");
+    return;
+  }
+  window.print();
 }
 
 
@@ -877,7 +1351,7 @@ function renderAdminReport() {
   els.adminTotalVisitas.textContent = total;
 
   if (!filtrado.length) {
-    els.adminReportBody.innerHTML = `<tr><td colspan="8">Nenhum dado encontrado.</td></tr>`;
+    els.adminReportBody.innerHTML = `<tr><td colspan="9">Nenhum dado encontrado.</td></tr>`;
     return;
   }
 
@@ -891,8 +1365,10 @@ function renderAdminReport() {
       <td>${meses[(item.mes || 1) - 1]}</td>
       <td><strong>${Number(item.quantidade || 0)}</strong></td>
       <td><strong>${Number(item.coberturaPercentual ?? calcularPercentual(item.quantidade, item.pessoasCadastradas))}%</strong></td>
+      <td><button type="button" class="table-edit-btn" data-edit-launch="1" data-acs-id="${escapeHtml(item.acsId || "")}" data-ano="${Number(item.ano)}" data-mes="${Number(item.mes)}">Editar</button></td>
     </tr>
   `).join("");
+  bindEditLaunchButtons(els.adminReportBody, adminReportData);
 }
 
 function exportCsv() {
@@ -959,6 +1435,9 @@ function bindEvents() {
   $("btn-save-visits").addEventListener("click", saveVisits);
   $("btn-add-admin").addEventListener("click", addAdminManual);
   $("btn-export-csv").addEventListener("click", exportCsv);
+  $("btn-run-report").addEventListener("click", renderReports);
+  $("btn-export-report-csv").addEventListener("click", exportReportCsv);
+  $("btn-print-report").addEventListener("click", printCurrentReport);
   if (els.installButton) els.installButton.addEventListener("click", installApp);
   if (els.updateButton) els.updateButton.addEventListener("click", forceAppUpdate);
   if (els.appVersion) els.appVersion.textContent = APP_VERSION;
@@ -970,7 +1449,16 @@ function bindEvents() {
   els.adminMonthSelect.addEventListener("change", loadAdminDashboard);
   els.adminSearch.addEventListener("input", renderAdminReport);
 
+  [els.reportType, els.reportYearSelect, els.reportStartMonth, els.reportEndMonth, els.reportAcsSelect].forEach((el) => {
+    if (el) el.addEventListener("change", renderReports);
+  });
+  if (els.reportSearch) els.reportSearch.addEventListener("input", renderReports);
+  if (els.reportStartMonth) els.reportStartMonth.addEventListener("change", () => {
+    if (els.reportType.value === "monthly_all") els.reportEndMonth.value = els.reportStartMonth.value;
+  });
+
   els.tabEnfermeira.addEventListener("click", () => openTab("enfermeira"));
+  if (els.tabRelatorios) els.tabRelatorios.addEventListener("click", () => openTab("relatorios"));
   els.tabAdmin.addEventListener("click", () => openTab("admin"));
 
   document.querySelectorAll("[data-scroll-target]").forEach((btn) => {
@@ -998,6 +1486,7 @@ onAuthStateChanged(auth, async (user) => {
       currentProfile = null;
       selectedAcs = null;
       acsCache = [];
+      if (els.emptyLaunchHint) els.emptyLaunchHint.classList.remove("hidden");
       if (unsubscribeAcs) unsubscribeAcs();
       showAuth();
       return;
