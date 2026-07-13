@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v10.0.0-20260713";
+const APP_VERSION = "v11.0.0-20260713";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
@@ -110,6 +110,9 @@ const els = {
   reportSearch: $("report-search"),
   reportMessage: $("report-message"),
   reportHelp: $("report-help"),
+  reportPreview: $("report-preview"),
+  reportStartLabel: $("report-start-label"),
+  reportAcsHint: $("report-acs-hint"),
   reportTitle: $("report-title"),
   reportSubtitle: $("report-subtitle"),
   reportTableBody: $("report-table-body"),
@@ -802,21 +805,105 @@ function populateReportAcsOptions() {
   }
 }
 
+function getReportTypeMeta(type) {
+  const meta = {
+    monthly_all: {
+      label: "Mês de todos os ACS",
+      help: "Mostra todos os ACS no mês selecionado. Ideal para fechar a produção mensal do posto.",
+      startLabel: "Mês",
+      showEnd: false,
+      acsRequired: false,
+      acsOptional: true,
+      periodText: "um único mês"
+    },
+    period_all: {
+      label: "Período de todos os ACS",
+      help: "Mostra todos os lançamentos entre o mês inicial e final. Exemplo: janeiro a março de toda a equipe.",
+      startLabel: "Mês inicial",
+      showEnd: true,
+      acsRequired: false,
+      acsOptional: true,
+      periodText: "um período"
+    },
+    period_acs: {
+      label: "Período de um ACS específico",
+      help: "Escolha um ACS e defina o intervalo. Ideal para ver 2, 3 ou mais meses de uma pessoa específica.",
+      startLabel: "Mês inicial",
+      showEnd: true,
+      acsRequired: true,
+      acsOptional: false,
+      periodText: "um período de um ACS"
+    },
+    annual_acs: {
+      label: "Ano completo de um ACS",
+      help: "Escolha um ACS. O sistema mostra janeiro a dezembro do ano escolhido.",
+      startLabel: "Janeiro a dezembro",
+      showEnd: false,
+      acsRequired: true,
+      acsOptional: false,
+      periodText: "o ano completo"
+    },
+    ranking_coverage: {
+      label: "Ranking de cobertura",
+      help: "Agrupa o período escolhido e ordena os ACS pela maior cobertura.",
+      startLabel: "Mês inicial",
+      showEnd: true,
+      acsRequired: false,
+      acsOptional: true,
+      periodText: "ranking do período"
+    },
+    consolidated: {
+      label: "Consolidado por posto/enfermeira",
+      help: "Agrupa visitas, cidadãos e cobertura por posto e enfermeira. Para admin, compara as unidades; para enfermeira, consolida o próprio posto.",
+      startLabel: "Mês inicial",
+      showEnd: true,
+      acsRequired: false,
+      acsOptional: false,
+      periodText: "consolidado do período"
+    }
+  };
+  return meta[type] || meta.monthly_all;
+}
+
+function updateReportTemplateCards(type) {
+  document.querySelectorAll("[data-report-template]").forEach((button) => {
+    const active = button.dataset.reportTemplate === type;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+}
+
+function toggleReportField(field, visible) {
+  if (!field) return;
+  field.classList.toggle("field-hidden", !visible);
+  const control = field.querySelector("input, select");
+  if (control) control.disabled = !visible;
+}
+
+function updateReportPreview() {
+  if (!els.reportPreview || !els.reportType) return;
+  const config = getReportConfig();
+  const meta = getReportTypeMeta(config.type);
+  const acsText = config.acsId
+    ? (acsCache.find((item) => item.id === config.acsId)?.nome || "ACS selecionado")
+    : (meta.acsRequired ? "nenhum ACS selecionado" : "todos os ACS");
+  const pesquisaText = config.search ? ` • Pesquisa: “${escapeHtml(config.search)}”` : "";
+  els.reportPreview.innerHTML = `<strong>Resumo do filtro:</strong> <span>${escapeHtml(meta.label)} • ${escapeHtml(periodoLabel(config.inicio, config.fim, config.ano))} • ${escapeHtml(acsText)}${pesquisaText}</span>`;
+}
+
 function updateReportHelp() {
   if (!els.reportHelp || !els.reportType) return;
   const type = els.reportType.value;
-  const messages = {
-    monthly_all: "Mensal de todos os ACS: mostra cada ACS no mês inicial selecionado.",
-    period_all: "Período de todos os ACS: mostra todos os lançamentos entre o mês inicial e final.",
-    period_acs: "Período de um ACS específico: ideal para ver 2, 3 ou mais meses de apenas um ACS.",
-    annual_acs: "Ano completo de um ACS: mostra janeiro a dezembro do ACS selecionado.",
-    ranking_coverage: "Ranking de cobertura: consolida o período e ordena os ACS pela maior cobertura.",
-    consolidated: "Consolidado por posto/enfermeira: agrupa os dados do período por unidade e responsável."
-  };
-  els.reportHelp.textContent = messages[type] || "Configure o relatório e clique em Gerar relatório.";
+  const meta = getReportTypeMeta(type);
 
-  const precisaAcs = type === "period_acs" || type === "annual_acs";
-  if (els.reportAcsSelect) els.reportAcsSelect.parentElement.classList.toggle("required-filter", precisaAcs);
+  els.reportHelp.textContent = meta.help;
+  updateReportTemplateCards(type);
+
+  const startField = els.reportStartMonth?.closest(".field-group");
+  const endField = els.reportEndMonth?.closest(".field-group");
+  const acsField = els.reportAcsSelect?.closest(".field-group");
+
+  if (els.reportStartLabel) els.reportStartLabel.textContent = meta.startLabel;
 
   if (type === "monthly_all") {
     els.reportEndMonth.value = els.reportStartMonth.value;
@@ -826,6 +913,30 @@ function updateReportHelp() {
     els.reportStartMonth.value = "1";
     els.reportEndMonth.value = "12";
   }
+
+  toggleReportField(startField, type !== "annual_acs");
+  toggleReportField(endField, meta.showEnd);
+  toggleReportField(acsField, meta.acsRequired || meta.acsOptional);
+
+  if (!meta.acsRequired && !meta.acsOptional && els.reportAcsSelect) {
+    els.reportAcsSelect.value = "";
+  }
+
+  if (acsField) {
+    acsField.classList.toggle("required-filter", meta.acsRequired);
+  }
+
+  if (els.reportAcsHint) {
+    if (meta.acsRequired) {
+      els.reportAcsHint.textContent = "Obrigatório para este relatório.";
+    } else if (meta.acsOptional) {
+      els.reportAcsHint.textContent = "Opcional para filtrar somente um ACS.";
+    } else {
+      els.reportAcsHint.textContent = "Este modelo usa dados consolidados.";
+    }
+  }
+
+  updateReportPreview();
 }
 
 async function loadReportsData() {
@@ -1438,6 +1549,30 @@ function bindEvents() {
   $("btn-run-report").addEventListener("click", renderReports);
   $("btn-export-report-csv").addEventListener("click", exportReportCsv);
   $("btn-print-report").addEventListener("click", printCurrentReport);
+
+  document.querySelectorAll("[data-report-template]").forEach((button) => {
+    button.addEventListener("click", () => {
+      els.reportType.value = button.dataset.reportTemplate;
+      const type = els.reportType.value;
+      if (type === "monthly_all") {
+        els.reportStartMonth.value = String(currentMonthNumber());
+        els.reportEndMonth.value = els.reportStartMonth.value;
+      }
+      if (type === "period_acs" && !els.reportAcsSelect.value) {
+        showMessage(els.reportMessage, "Escolha o ACS para gerar esse relatório.");
+      }
+      updateReportHelp();
+      renderReports();
+    });
+  });
+
+  document.querySelectorAll("[data-period-preset]").forEach((button) => {
+    button.addEventListener("click", () => {
+      applyReportPeriodPreset(button.dataset.periodPreset);
+      updateReportHelp();
+      renderReports();
+    });
+  });
   if (els.installButton) els.installButton.addEventListener("click", installApp);
   if (els.updateButton) els.updateButton.addEventListener("click", forceAppUpdate);
   if (els.appVersion) els.appVersion.textContent = APP_VERSION;
@@ -1452,7 +1587,10 @@ function bindEvents() {
   [els.reportType, els.reportYearSelect, els.reportStartMonth, els.reportEndMonth, els.reportAcsSelect].forEach((el) => {
     if (el) el.addEventListener("change", renderReports);
   });
-  if (els.reportSearch) els.reportSearch.addEventListener("input", renderReports);
+  if (els.reportSearch) els.reportSearch.addEventListener("input", () => {
+    updateReportPreview();
+    renderReports();
+  });
   if (els.reportStartMonth) els.reportStartMonth.addEventListener("change", () => {
     if (els.reportType.value === "monthly_all") els.reportEndMonth.value = els.reportStartMonth.value;
   });

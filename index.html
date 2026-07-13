@@ -4,21 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Controle de Visitas ACS</title>
-  <link rel="stylesheet" href="style.css?v=20260713-v10-editar-lancamentos" />
-  <link rel="manifest" href="manifest.json?v=20260713-v10-editar-lancamentos" />
+  <link rel="stylesheet" href="style.css?v=20260713-v11-relatorios-melhorados" />
+  <link rel="manifest" href="manifest.json?v=20260713-v11-relatorios-melhorados" />
   <meta name="theme-color" content="#04756f" />
   <meta name="description" content="Sistema de Controle de Visitas ACS" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Visitas ACS" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v10-editar-lancamentos" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v11-relatorios-melhorados" />
 </head>
 <body>
   <div class="developer-banner">
     <div class="developer-text">
       <span class="shield-icon" aria-hidden="true">✓</span>
       <span>Sistema desenvolvido e emprestado por <strong>Eliel do Carmo</strong></span>
-      <small id="app-version" class="app-version">v10</small>
+      <small id="app-version" class="app-version">v11</small>
     </div>
     <div class="banner-actions">
       <button id="btn-install-app" type="button" class="banner-btn install hidden">⬇ Instalar app</button>
@@ -275,78 +275,142 @@
           <article class="mini-card"><span>ACS no relatório</span><strong id="report-total-acs">0</strong></article>
         </div>
 
-        <div class="card report-builder-card">
+        <div class="card report-builder-card report-wizard-card">
           <div class="section-title-row wrap report-head">
             <div>
-              <h2>Configurar relatório</h2>
-              <p class="muted">Escolha o tipo de relatório e o período. Para relatório de 3 meses, selecione o mês inicial e final.</p>
+              <p class="eyebrow">Filtros guiados</p>
+              <h2>Montar relatório</h2>
+              <p class="muted">Escolha primeiro o modelo do relatório. Depois ajuste ano, meses, ACS e pesquisa conforme a necessidade.</p>
             </div>
           </div>
 
-          <div class="report-controls">
-            <div>
-              <label for="report-type">Tipo de relatório</label>
-              <select id="report-type">
-                <option value="monthly_all">Mensal de todos os ACS</option>
-                <option value="period_all">Período de todos os ACS</option>
-                <option value="period_acs">Período de um ACS específico</option>
-                <option value="annual_acs">Ano completo de um ACS</option>
-                <option value="ranking_coverage">Ranking de cobertura</option>
-                <option value="consolidated">Consolidado por posto/enfermeira</option>
-              </select>
+          <select id="report-type" class="visually-hidden-select" aria-label="Tipo de relatório">
+            <option value="monthly_all">Mensal de todos os ACS</option>
+            <option value="period_all">Período de todos os ACS</option>
+            <option value="period_acs">Período de um ACS específico</option>
+            <option value="annual_acs">Ano completo de um ACS</option>
+            <option value="ranking_coverage">Ranking de cobertura</option>
+            <option value="consolidated">Consolidado por posto/enfermeira</option>
+          </select>
+
+          <div class="report-step">
+            <div class="step-header">
+              <span class="step-number">1</span>
+              <div>
+                <h3>Escolha o modelo</h3>
+                <p>Use estes atalhos para não se perder nos filtros.</p>
+              </div>
             </div>
 
-            <div>
-              <label for="report-year-select">Ano</label>
-              <select id="report-year-select"></select>
+            <div class="report-template-grid" role="group" aria-label="Modelos de relatório">
+              <button type="button" class="report-template-card active" data-report-template="monthly_all">
+                <span class="template-icon">📅</span>
+                <strong>Mês de todos os ACS</strong>
+                <small>Ex.: ver janeiro de toda a equipe.</small>
+              </button>
+              <button type="button" class="report-template-card" data-report-template="period_all">
+                <span class="template-icon">↔</span>
+                <strong>Período de todos</strong>
+                <small>Ex.: janeiro a março de todos os ACS.</small>
+              </button>
+              <button type="button" class="report-template-card" data-report-template="period_acs">
+                <span class="template-icon">👤</span>
+                <strong>Período de 1 ACS</strong>
+                <small>Ex.: 3 meses da Maria das Graças.</small>
+              </button>
+              <button type="button" class="report-template-card" data-report-template="annual_acs">
+                <span class="template-icon">🗓️</span>
+                <strong>Ano de 1 ACS</strong>
+                <small>Janeiro a dezembro de um ACS.</small>
+              </button>
+              <button type="button" class="report-template-card" data-report-template="ranking_coverage">
+                <span class="template-icon">🏆</span>
+                <strong>Ranking</strong>
+                <small>Ordena ACS por maior cobertura.</small>
+              </button>
+              <button type="button" class="report-template-card" data-report-template="consolidated">
+                <span class="template-icon">🏥</span>
+                <strong>Consolidado</strong>
+                <small>Agrupa por posto e enfermeira.</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="report-step report-filter-step">
+            <div class="step-header">
+              <span class="step-number">2</span>
+              <div>
+                <h3>Defina o período e refine</h3>
+                <p>Os campos mudam conforme o modelo escolhido.</p>
+              </div>
             </div>
 
-            <div>
-              <label for="report-start-month">Mês inicial</label>
-              <select id="report-start-month">
-                <option value="1">Janeiro</option>
-                <option value="2">Fevereiro</option>
-                <option value="3">Março</option>
-                <option value="4">Abril</option>
-                <option value="5">Maio</option>
-                <option value="6">Junho</option>
-                <option value="7">Julho</option>
-                <option value="8">Agosto</option>
-                <option value="9">Setembro</option>
-                <option value="10">Outubro</option>
-                <option value="11">Novembro</option>
-                <option value="12">Dezembro</option>
-              </select>
+            <div class="quick-periods" aria-label="Atalhos de período">
+              <button type="button" class="quick-period-btn" data-period-preset="current">Mês atual</button>
+              <button type="button" class="quick-period-btn" data-period-preset="last3">Últimos 3 meses</button>
+              <button type="button" class="quick-period-btn" data-period-preset="fullYear">Ano inteiro</button>
+              <button type="button" class="quick-period-btn light" data-period-preset="clear">Limpar pesquisa</button>
             </div>
 
-            <div>
-              <label for="report-end-month">Mês final</label>
-              <select id="report-end-month">
-                <option value="1">Janeiro</option>
-                <option value="2">Fevereiro</option>
-                <option value="3">Março</option>
-                <option value="4">Abril</option>
-                <option value="5">Maio</option>
-                <option value="6">Junho</option>
-                <option value="7">Julho</option>
-                <option value="8">Agosto</option>
-                <option value="9">Setembro</option>
-                <option value="10">Outubro</option>
-                <option value="11">Novembro</option>
-                <option value="12">Dezembro</option>
-              </select>
+            <div class="report-controls improved-report-controls">
+              <div class="field-group report-field-year">
+                <label for="report-year-select">Ano</label>
+                <select id="report-year-select"></select>
+              </div>
+
+              <div class="field-group report-field-start">
+                <label for="report-start-month" id="report-start-label">Mês</label>
+                <select id="report-start-month">
+                  <option value="1">Janeiro</option>
+                  <option value="2">Fevereiro</option>
+                  <option value="3">Março</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Maio</option>
+                  <option value="6">Junho</option>
+                  <option value="7">Julho</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Setembro</option>
+                  <option value="10">Outubro</option>
+                  <option value="11">Novembro</option>
+                  <option value="12">Dezembro</option>
+                </select>
+              </div>
+
+              <div class="field-group report-field-end">
+                <label for="report-end-month">Mês final</label>
+                <select id="report-end-month">
+                  <option value="1">Janeiro</option>
+                  <option value="2">Fevereiro</option>
+                  <option value="3">Março</option>
+                  <option value="4">Abril</option>
+                  <option value="5">Maio</option>
+                  <option value="6">Junho</option>
+                  <option value="7">Julho</option>
+                  <option value="8">Agosto</option>
+                  <option value="9">Setembro</option>
+                  <option value="10">Outubro</option>
+                  <option value="11">Novembro</option>
+                  <option value="12">Dezembro</option>
+                </select>
+              </div>
+
+              <div class="field-group report-field-acs">
+                <label for="report-acs-select">ACS</label>
+                <select id="report-acs-select">
+                  <option value="">Todos os ACS</option>
+                </select>
+                <small class="field-hint" id="report-acs-hint">Opcional para filtrar somente um ACS.</small>
+              </div>
+
+              <div class="field-group report-search-field">
+                <label for="report-search">Pesquisar dentro do resultado</label>
+                <input id="report-search" type="text" placeholder="Posto, enfermeira, ACS ou microárea" />
+              </div>
             </div>
 
-            <div>
-              <label for="report-acs-select">ACS</label>
-              <select id="report-acs-select">
-                <option value="">Todos os ACS</option>
-              </select>
-            </div>
-
-            <div class="report-search-field">
-              <label for="report-search">Pesquisa</label>
-              <input id="report-search" type="text" placeholder="Filtrar por posto, enfermeira, ACS ou microárea" />
+            <div id="report-preview" class="report-preview">
+              <strong>Resumo do filtro:</strong>
+              <span>Mensal de todos os ACS.</span>
             </div>
           </div>
 
@@ -509,6 +573,6 @@
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260713-v10-editar-lancamentos"></script>
+  <script type="module" src="app.js?v=20260713-v11-relatorios-melhorados"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-SISTEMA DE CONTROLE DE VISITAS ACS - V10 EDIÇÃO DE LANÇAMENTOS
+SISTEMA DE CONTROLE DE VISITAS ACS - V11 RELATÓRIOS MELHORADOS
 
 Projeto Firebase configurado:
 gestaoacs-f4bdd
@@ -77,10 +77,18 @@ VERSÃO v9.0.0-20260713
 - Admin visualiza todos os postos, enfermeiras e ACS.
 
 
-VERSÃO v10.0.0-20260713
+VERSÃO v11.0.0-20260713
 - Nova opção Editar nos relatórios e no relatório geral do admin.
 - Enfermeira pode abrir um lançamento salvo, corrigir cidadãos/visitas e salvar novamente.
-- Admin também pode editar lançamentos de qualquer posto pelo relatório geral.
+- Admin também pode melhorar filtros dos relatórios de qualquer posto pelo relatório geral.
 - Ao clicar em Editar, o sistema abre automaticamente o ACS, o ano e destaca o mês escolhido.
 - Botão atualizado para Salvar/atualizar visitas do ano.
 - Versionamento atualizado para limpar cache antigo no GitHub Pages/PWA.
+
+
+NOVIDADES DA V11
+- Aba Relatórios reorganizada em passos.
+- Modelos rápidos de relatório: mês, período, ACS específico, ano, ranking e consolidado.
+- Atalhos de período: mês atual, últimos 3 meses, ano inteiro e limpar pesquisa.
+- Resumo do filtro antes de gerar o relatório.
+- Campos escondidos automaticamente quando não são necessários.
