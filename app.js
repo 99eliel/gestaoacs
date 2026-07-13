@@ -336,7 +336,7 @@ async function addAcs() {
   }
 
   try {
-    await addDoc(collection(db, "acs"), {
+    const docRef = await addDoc(collection(db, "acs"), {
       nome,
       microarea,
       posto: currentProfile.posto,
@@ -346,9 +346,20 @@ async function addAcs() {
       criadoEm: serverTimestamp()
     });
 
+    const novoAcs = {
+      id: docRef.id,
+      nome,
+      microarea,
+      posto: currentProfile.posto,
+      enfermeiraId: currentUser.uid,
+      enfermeiraNome: currentProfile.nome,
+      ativo: true
+    };
+
     $("acs-name").value = "";
     $("acs-microarea").value = "";
-    showMessage(els.acsMessage, "ACS cadastrado com sucesso!");
+    showMessage(els.acsMessage, "ACS cadastrado com sucesso! A tela de lançamento de visitas foi aberta logo abaixo.");
+    await selectAcs(novoAcs);
   } catch (error) {
     showMessage(els.acsMessage, traduzErroFirebase(error), true);
   }
@@ -397,16 +408,21 @@ function renderAcsList() {
 
   lista.forEach((acs) => {
     const item = document.createElement("div");
-    item.className = "acs-item";
+    item.className = "acs-item clickable";
     item.innerHTML = `
       <div>
         <strong>${escapeHtml(acs.nome)}</strong>
         <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")} | População informada mês a mês</span>
+        <small class="acs-hint">Toque neste ACS ou no botão ao lado para lançar as visitas mensais.</small>
       </div>
-      <button class="secondary-btn">Lançar visitas</button>
+      <button class="secondary-btn acs-launch-btn">Abrir lançamento de visitas</button>
     `;
 
-    item.querySelector("button").addEventListener("click", () => selectAcs(acs));
+    item.addEventListener("click", () => selectAcs(acs));
+    item.querySelector("button").addEventListener("click", (event) => {
+      event.stopPropagation();
+      selectAcs(acs);
+    });
     els.acsList.appendChild(item);
   });
 }
@@ -414,6 +430,7 @@ function renderAcsList() {
 async function selectAcs(acs) {
   selectedAcs = acs;
   els.visitasCard.classList.remove("hidden");
+  showMessage(els.visitsMessage, "");
   els.selectedAcsTitle.textContent = `Lançamento mensal - ${acs.nome}`;
   els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"} | Informe cidadãos cadastrados e visitas em cada mês`;
   await renderMonthsForSelectedAcs();

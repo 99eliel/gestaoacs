@@ -1,3 +1,12 @@
+SISTEMA DE CONTROLE DE VISITAS ACS - V5
+
+Atualização desta versão:
+- Corrigida a visualização do lançamento de visitas para enfermeiras.
+- Depois de cadastrar um ACS, a tela de lançamento mensal abre automaticamente.
+- Na lista de ACS, agora o card inteiro é clicável.
+- O botão ficou mais claro: "Abrir lançamento de visitas".
+- Mantido cálculo mensal de cobertura usando cidadãos cadastrados no mês + visitas realizadas.
+
 SISTEMA DE CONTROLE DE VISITAS ACS - VERSÃO COM POPULAÇÃO MENSAL
 
 Projeto pronto em HTML, CSS e JavaScript usando Firebase Authentication e Cloud Firestore.
