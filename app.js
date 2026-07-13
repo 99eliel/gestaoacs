@@ -22,6 +22,10 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+const APP_VERSION = "v7.0.0-20260713";
+const APP_CACHE_PREFIX = "visitas-acs-";
+console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
+
 // 1) COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE
 // Firebase Console > Configurações do projeto > Seus apps > SDK setup and configuration > Config
 const firebaseConfig = {
@@ -94,7 +98,9 @@ const els = {
   adminTotalEnfermeiras: $("admin-total-enfermeiras"),
   adminTotalAcs: $("admin-total-acs"),
   adminTotalVisitas: $("admin-total-visitas"),
-  installButton: $("btn-install-app")
+  installButton: $("btn-install-app"),
+  updateButton: $("btn-update-app"),
+  appVersion: $("app-version")
 };
 
 
@@ -138,12 +144,77 @@ window.addEventListener("appinstalled", () => {
   updateInstallButton();
 });
 
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js").catch((error) => {
-      console.warn("Service worker não registrado:", error);
+async function clearOldAppCaches() {
+  if (!("caches" in window)) return;
+
+  const keys = await caches.keys();
+  await Promise.all(
+    keys
+      .filter((key) => key.startsWith(APP_CACHE_PREFIX))
+      .map((key) => caches.delete(key))
+  );
+}
+
+async function registerAutoUpdateServiceWorker() {
+  if (!("serviceWorker" in navigator)) return;
+
+  try {
+    const registration = await navigator.serviceWorker.register(`./service-worker.js?v=${encodeURIComponent(APP_VERSION)}`, {
+      updateViaCache: "none"
     });
+
+    registration.update();
+
+    registration.addEventListener("updatefound", () => {
+      const newWorker = registration.installing;
+      if (!newWorker) return;
+
+      newWorker.addEventListener("statechange", () => {
+        if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+          newWorker.postMessage({ type: "SKIP_WAITING" });
+        }
+      });
+    });
+  } catch (error) {
+    console.warn("Service worker não registrado:", error);
+  }
+}
+
+let reloadingForUpdate = false;
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloadingForUpdate) return;
+    reloadingForUpdate = true;
+    window.location.reload();
   });
+
+  window.addEventListener("load", async () => {
+    const storedVersion = localStorage.getItem("ACS_APP_VERSION");
+    if (storedVersion !== APP_VERSION) {
+      await clearOldAppCaches();
+      localStorage.setItem("ACS_APP_VERSION", APP_VERSION);
+    }
+
+    await registerAutoUpdateServiceWorker();
+  });
+}
+
+async function forceAppUpdate() {
+  try {
+    showMessage(els.authMessage || els.visitsMessage, "Atualizando o sistema...");
+  } catch (_) {}
+
+  if ("serviceWorker" in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map((registration) => registration.unregister()));
+  }
+
+  await clearOldAppCaches();
+  localStorage.setItem("ACS_APP_VERSION", APP_VERSION);
+
+  const url = new URL(window.location.href);
+  url.searchParams.set("v", APP_VERSION);
+  window.location.replace(url.toString());
 }
 
 function showMessage(el, text, isError = false) {
@@ -433,6 +504,11 @@ async function selectAcs(acs) {
   showMessage(els.visitsMessage, "");
   els.selectedAcsTitle.textContent = `Lançamento mensal - ${acs.nome}`;
   els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"} | Informe cidadãos cadastrados e visitas em cada mês`;
+
+  // Abre os 12 meses imediatamente, antes mesmo de consultar o Firestore.
+  // Assim a enfermeira sempre verá os campos: cidadãos do mês + visitas do mês.
+  montarCamposMensais({});
+
   await renderMonthsForSelectedAcs();
   els.visitasCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -445,7 +521,6 @@ async function renderMonthsForSelectedAcs() {
 
   // Primeiro monta os campos vazios, assim a enfermeira sempre vê onde lançar.
   // Depois, se já existir lançamento salvo, os valores são carregados por cima.
-  els.monthsGrid.innerHTML = "";
   montarCamposMensais(visitasPorMes);
 
   try {
@@ -480,6 +555,9 @@ async function renderMonthsForSelectedAcs() {
 }
 
 function montarCamposMensais(visitasPorMes) {
+  if (!els.monthsGrid) return;
+  els.monthsGrid.innerHTML = "";
+
   meses.forEach((mesNome, index) => {
     const mesNumero = index + 1;
     const dadosMes = visitasPorMes[mesNumero] || { quantidade: 0, pessoasCadastradas: 0 };
@@ -529,6 +607,10 @@ function montarCamposMensais(visitasPorMes) {
 
     els.monthsGrid.appendChild(box);
   });
+
+  if (!els.monthsGrid.children.length) {
+    els.monthsGrid.innerHTML = `<div class="empty-box">Não foi possível montar os campos. Atualize o sistema e tente novamente.</div>`;
+  }
 }
 
 function calcularPercentual(visitas, pessoas) {
@@ -857,6 +939,8 @@ function bindEvents() {
   $("btn-add-admin").addEventListener("click", addAdminManual);
   $("btn-export-csv").addEventListener("click", exportCsv);
   if (els.installButton) els.installButton.addEventListener("click", installApp);
+  if (els.updateButton) els.updateButton.addEventListener("click", forceAppUpdate);
+  if (els.appVersion) els.appVersion.textContent = APP_VERSION;
   updateInstallButton();
 
   els.searchAcs.addEventListener("input", renderAcsList);

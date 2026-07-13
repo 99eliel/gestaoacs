@@ -4,19 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Controle de Visitas ACS</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css?v=20260713-v7-acs" />
+  <link rel="manifest" href="manifest.json?v=20260713-v7-acs" />
   <meta name="theme-color" content="#0f766e" />
   <meta name="description" content="Sistema de Controle de Visitas ACS" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Visitas ACS" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v7-acs" />
 </head>
 <body>
   <div class="developer-banner">
-    <span>Sistema desenvolvido e emprestado por Eliel do Carmo</span>
-    <button id="btn-install-app" type="button" class="banner-install-btn hidden">Instalar app</button>
+    <span>Sistema desenvolvido e emprestado por Eliel do Carmo <small id="app-version" class="app-version">v7</small></span>
+    <div class="banner-actions">
+      <button id="btn-update-app" type="button" class="banner-install-btn">Atualizar sistema</button>
+      <button id="btn-install-app" type="button" class="banner-install-btn hidden">Instalar app</button>
+    </div>
   </div>
 
   <div id="loading" class="loading">Carregando sistema...</div>
@@ -216,6 +219,6 @@
     </section>
   </main>
 
-  <script type="module" src="app.js"></script>
+  <script type="module" src="app.js?v=20260713-v7-acs"></script>
 </body>
 </html>

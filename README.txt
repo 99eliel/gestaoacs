@@ -1,100 +1,62 @@
-SISTEMA DE CONTROLE DE VISITAS ACS - V5
+SISTEMA DE CONTROLE DE VISITAS ACS - V7
 
-Atualização desta versão:
-- Corrigida a visualização do lançamento de visitas para enfermeiras.
-- Depois de cadastrar um ACS, a tela de lançamento mensal abre automaticamente.
-- Na lista de ACS, agora o card inteiro é clicável.
-- O botão ficou mais claro: "Abrir lançamento de visitas".
-- Mantido cálculo mensal de cobertura usando cidadãos cadastrados no mês + visitas realizadas.
+Projeto Firebase configurado:
+gestaoacs-f4bdd
 
-SISTEMA DE CONTROLE DE VISITAS ACS - VERSÃO COM POPULAÇÃO MENSAL
+Administrador principal:
+carmoeliel99@gmail.com
 
-Projeto pronto em HTML, CSS e JavaScript usando Firebase Authentication e Cloud Firestore.
+ARQUIVOS PARA SUBIR NO GITHUB PAGES
+Suba todos estes arquivos na raiz do repositório:
 
-CONFIGURAÇÃO JÁ INSERIDA
-Projeto Firebase: gestaoacs-f4bdd
-Auth domain: gestaoacs-f4bdd.firebaseapp.com
-Project ID: gestaoacs-f4bdd
-Admin principal: carmoeliel99@gmail.com
+index.html
+style.css
+app.js
+manifest.json
+firebase-rules.txt
+service-worker.js
+icon-192.png
+icon-512.png
+README.txt
 
-FUNÇÕES PRONTAS
-- Login com e-mail e senha.
-- Cadastro de enfermeiras.
-- Nome do posto no cadastro.
-- Cadastro de ACS.
-- Lista de ACS por enfermeira.
-- Lançamento mensal com dois campos por mês: cidadãos cadastrados no mês e visitas realizadas.
-- Cálculo automático de cobertura do território usando a população daquele mês.
-  Exemplo: Janeiro com 500 cidadãos e 400 visitas = 80%.
-  Exemplo: Fevereiro com 450 cidadãos e 400 visitas = 89%.
-- Painel administrativo.
-- Função para liberar outros administradores manualmente pelo e-mail.
-- Relatório administrativo por ano e mês.
-- Relatório com cidadãos cadastrados por mês e percentual de cobertura mensal.
-- Exportação CSV.
-- Recuperação de senha.
+O QUE MUDOU NA V7
+1. Correção definitiva da tela de lançamento mensal.
+   Ao clicar em "Abrir lançamento de visitas", devem aparecer os 12 meses.
+   Cada mês mostra:
+   - Quantos cidadãos?
+   - Quantas visitas?
+   - Cobertura automática em %
 
-PASSO A PASSO NO FIREBASE
-1. Acesse o Firebase Console.
-2. Entre no projeto gestaoacs-f4bdd.
-3. Vá em Authentication > Sign-in method.
-4. Ative Email/Password.
-5. Vá em Firestore Database.
-6. Crie o banco em modo Production, se ainda não tiver criado.
-7. Vá em Rules.
-8. Cole todo o conteúdo do arquivo firebase-rules.txt.
-9. Clique em Publish.
+2. Versionamento do site.
+   O index.html chama app.js e style.css com versão no link:
+   app.js?v=20260713-v7-acs
+   style.css?v=20260713-v7-acs
 
-IMPORTANTE SOBRE NOVOS ADMINISTRADORES
-1. Entre no sistema com o e-mail admin principal: carmoeliel99@gmail.com.
-2. Acesse a aba Admin.
-3. Use o card "Adicionar administrador".
-4. Coloque nome, e-mail e setor/posto.
-5. Clique em "Liberar administrador".
+3. Atualização automática do app.
+   O service-worker.js não prende mais HTML, JS e CSS antigos.
+   Ele sempre tenta buscar a versão nova primeiro.
 
-Se a pessoa ainda não tiver conta:
-- Ela deve clicar em "Criar cadastro de enfermeira" usando exatamente o e-mail liberado.
-- O sistema vai reconhecer esse e-mail e criar o perfil como admin.
+4. Botão "Atualizar sistema" no topo.
+   Se algum celular estiver segurando cache antigo, toque nesse botão.
+   Ele limpa cache, remove service worker antigo e recarrega o sistema.
 
-Se a pessoa já tiver conta:
-- O sistema atualiza o perfil existente para admin automaticamente.
+5. Versão visível no topo.
+   No banner aparece a versão v7.0.0-20260713.
+   Isso ajuda a confirmar se o celular realmente abriu a versão nova.
 
-COMO TESTAR NO PC
-1. Abra a pasta no VS Code.
-2. Use a extensão Live Server.
-3. Clique com o botão direito no index.html.
-4. Clique em Open with Live Server.
-5. Crie sua conta usando carmoeliel99@gmail.com.
-6. Depois cadastre enfermeiras, ACS e lançamentos mensais.
+PASSO A PASSO PARA ATUALIZAR NO GITHUB PAGES
+1. Apague os arquivos antigos do repositório ou substitua todos.
+2. Suba todos os arquivos desta pasta na raiz do repositório.
+3. Aguarde o GitHub Pages publicar.
+4. Abra o sistema no navegador.
+5. Confira no topo se aparece v7.0.0-20260713.
+6. Toque em "Atualizar sistema" uma vez no celular que estava com problema.
+7. Depois clique no ACS e verifique se aparecem os campos dos meses.
 
-COMO SUBIR NO GITHUB PAGES
-1. Suba os arquivos index.html, style.css, app.js, manifest.json, firebase-rules.txt e README.txt no repositório.
-2. Vá em Settings > Pages.
-3. Em Source, selecione Deploy from a branch.
-4. Selecione a branch main e a pasta /root.
-5. Salve.
-6. No Firebase, em Authentication > Settings > Authorized domains, adicione 99eliel.github.io se o login der erro de domínio.
+FIREBASE
+Se já publicou as regras da versão anterior, as regras continuam compatíveis.
+Mesmo assim, se der erro de permissão, copie todo o conteúdo de firebase-rules.txt e cole em:
+Firebase > Firestore Database > Rules > Publish
 
-OBSERVAÇÃO IMPORTANTE
-Não cadastre dados de pacientes no sistema. Use apenas quantidade de visitas por ACS e total de cidadãos cadastrados no mês.
-
-
-NOVIDADES DA VERSÃO 4
-- Aviso fixo no topo: Sistema desenvolvido e emprestado por Eliel do Carmo.
-- Botão para instalar o sistema como app no celular/PC.
-- Manifest atualizado com ícones 192x192 e 512x512.
-- Service worker adicionado para habilitar instalação PWA e cache básico dos arquivos.
-
-ARQUIVOS NOVOS DESTA VERSÃO
-- service-worker.js
-- icon-192.png
-- icon-512.png
-
-OBSERVAÇÃO SOBRE ATUALIZAÇÕES
-Ao substituir os arquivos no GitHub Pages, se o celular ainda mostrar uma versão antiga, abra o sistema, atualize a página e aguarde alguns segundos. O service worker desta versão foi configurado para buscar os arquivos novos pela internet e atualizar o cache.
-
-
-VERSÃO V6 - CORREÇÃO DO LANÇAMENTO
-- Corrigida a abertura dos campos mensais de lançamento para enfermeiras.
-- Cada mês agora mostra claramente: Quantos cidadãos? e Quantas visitas?
-- A consulta do Firestore foi ajustada para respeitar as regras de permissão por enfermeira.
+OBSERVAÇÃO
+Não cadastre dados de pacientes. O sistema deve guardar apenas ACS, posto, mês, total de cidadãos cadastrados no mês e total de visitas.

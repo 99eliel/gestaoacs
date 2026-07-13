@@ -509,3 +509,56 @@ th {
     max-width: 260px;
   }
 }
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.app-version {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.9;
+  padding: 3px 7px;
+  border: 1px solid rgba(255,255,255,0.45);
+  border-radius: 999px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.months-grid:empty::before {
+  content: "Carregando campos de lançamento mensal...";
+  color: var(--muted);
+  display: block;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.month-box input {
+  font-weight: 800;
+}
+
+.version-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .developer-banner {
+    font-size: 14px;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .banner-install-btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
