@@ -441,25 +441,45 @@ async function renderMonthsForSelectedAcs() {
   if (!selectedAcs) return;
 
   const ano = Number(els.yearSelect.value);
-  const q = query(
-    collection(db, "visitas"),
-    where("acsId", "==", selectedAcs.id),
-    where("ano", "==", ano)
-  );
-
-  const snap = await getDocs(q);
   const visitasPorMes = {};
 
-  snap.forEach((docSnap) => {
-    const data = docSnap.data();
-    visitasPorMes[data.mes] = {
-      quantidade: Number(data.quantidade || 0),
-      pessoasCadastradas: Number(data.pessoasCadastradas ?? selectedAcs.pessoasCadastradas ?? 0)
-    };
-  });
-
+  // Primeiro monta os campos vazios, assim a enfermeira sempre vê onde lançar.
+  // Depois, se já existir lançamento salvo, os valores são carregados por cima.
   els.monthsGrid.innerHTML = "";
+  montarCamposMensais(visitasPorMes);
 
+  try {
+    const filtros = [
+      where("acsId", "==", selectedAcs.id),
+      where("ano", "==", ano)
+    ];
+
+    // Importante para as regras do Firestore: a enfermeira só pode consultar os documentos dela.
+    // Sem este filtro, a consulta podia ser bloqueada e os campos de visitas ficavam invisíveis.
+    if (currentProfile?.tipo !== "admin") {
+      filtros.push(where("enfermeiraId", "==", currentUser.uid));
+    }
+
+    const q = query(collection(db, "visitas"), ...filtros);
+    const snap = await getDocs(q);
+
+    snap.forEach((docSnap) => {
+      const data = docSnap.data();
+      visitasPorMes[data.mes] = {
+        quantidade: Number(data.quantidade || 0),
+        pessoasCadastradas: Number(data.pessoasCadastradas ?? 0)
+      };
+    });
+
+    els.monthsGrid.innerHTML = "";
+    montarCamposMensais(visitasPorMes);
+  } catch (error) {
+    console.error("Erro ao carregar lançamentos mensais:", error);
+    showMessage(els.visitsMessage, "Os campos foram abertos. Se valores antigos não aparecerem, confira as regras do Firestore e salve novamente.", true);
+  }
+}
+
+function montarCamposMensais(visitasPorMes) {
   meses.forEach((mesNome, index) => {
     const mesNumero = index + 1;
     const dadosMes = visitasPorMes[mesNumero] || { quantidade: 0, pessoasCadastradas: 0 };
@@ -472,7 +492,7 @@ async function renderMonthsForSelectedAcs() {
       <label>${mesNome}</label>
       <div class="month-fields">
         <div>
-          <span>Cidadãos cadastrados</span>
+          <span>Quantos cidadãos?</span>
           <input
             type="number"
             min="0"
@@ -480,10 +500,11 @@ async function renderMonthsForSelectedAcs() {
             data-month="${mesNumero}"
             data-field="pessoas"
             value="${pessoasAtual}"
+            placeholder="Ex.: 500"
           />
         </div>
         <div>
-          <span>Visitas realizadas</span>
+          <span>Quantas visitas?</span>
           <input
             type="number"
             min="0"
@@ -491,6 +512,7 @@ async function renderMonthsForSelectedAcs() {
             data-month="${mesNumero}"
             data-field="visitas"
             value="${quantidadeAtual}"
+            placeholder="Ex.: 400"
           />
         </div>
       </div>
@@ -522,6 +544,11 @@ async function saveVisits() {
 
   const ano = Number(els.yearSelect.value);
   const monthBoxes = Array.from(els.monthsGrid.querySelectorAll(".month-box"));
+
+  if (!monthBoxes.length) {
+    showMessage(els.visitsMessage, "Os campos de lançamento ainda não carregaram. Toque novamente em Abrir lançamento de visitas.", true);
+    return;
+  }
 
   try {
     showMessage(els.visitsMessage, "Salvando...");

@@ -92,3 +92,9 @@ ARQUIVOS NOVOS DESTA VERSÃO
 
 OBSERVAÇÃO SOBRE ATUALIZAÇÕES
 Ao substituir os arquivos no GitHub Pages, se o celular ainda mostrar uma versão antiga, abra o sistema, atualize a página e aguarde alguns segundos. O service worker desta versão foi configurado para buscar os arquivos novos pela internet e atualizar o cache.
+
+
+VERSÃO V6 - CORREÇÃO DO LANÇAMENTO
+- Corrigida a abertura dos campos mensais de lançamento para enfermeiras.
+- Cada mês agora mostra claramente: Quantos cidadãos? e Quantas visitas?
+- A consulta do Firestore foi ajustada para respeitar as regras de permissão por enfermeira.

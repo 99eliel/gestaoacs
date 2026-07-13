@@ -1,4 +1,4 @@
-const CACHE_NAME = "visitas-acs-v5-20260710";
+const CACHE_NAME = "visitas-acs-v6-20260713";
 const CORE_ASSETS = [
   "./",
   "./index.html",
