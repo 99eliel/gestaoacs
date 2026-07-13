@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v7.0.0-20260713";
+const APP_VERSION = "v8.0.0-20260713";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
@@ -463,6 +463,14 @@ function listenAcs() {
   });
 }
 
+function getInitials(name) {
+  const words = String(name || "ACS").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "ACS";
+  const first = words[0]?.[0] || "A";
+  const last = words.length > 1 ? words[words.length - 1]?.[0] : words[0]?.[1];
+  return `${first}${last || ""}`.toUpperCase();
+}
+
 function renderAcsList() {
   const filtro = normalizeText(els.searchAcs.value).toLowerCase();
   const lista = acsCache.filter((acs) =>
@@ -479,14 +487,15 @@ function renderAcsList() {
 
   lista.forEach((acs) => {
     const item = document.createElement("div");
-    item.className = "acs-item clickable";
+    item.className = `acs-item clickable ${selectedAcs?.id === acs.id ? "selected" : ""}`;
+    item.dataset.initials = getInitials(acs.nome);
     item.innerHTML = `
       <div>
         <strong>${escapeHtml(acs.nome)}</strong>
-        <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")} | População informada mês a mês</span>
-        <small class="acs-hint">Toque neste ACS ou no botão ao lado para lançar as visitas mensais.</small>
+        <span class="muted">Microárea: ${escapeHtml(acs.microarea || "Não informada")}</span>
+        <small class="acs-hint">População informada mês a mês</small>
       </div>
-      <button class="secondary-btn acs-launch-btn">Abrir lançamento de visitas</button>
+      <button class="secondary-btn acs-launch-btn">Abrir lançamento</button>
     `;
 
     item.addEventListener("click", () => selectAcs(acs));
@@ -502,8 +511,9 @@ async function selectAcs(acs) {
   selectedAcs = acs;
   els.visitasCard.classList.remove("hidden");
   showMessage(els.visitsMessage, "");
-  els.selectedAcsTitle.textContent = `Lançamento mensal - ${acs.nome}`;
-  els.selectedAcsSubtitle.textContent = `Posto: ${acs.posto} | Microárea: ${acs.microarea || "não informada"} | Informe cidadãos cadastrados e visitas em cada mês`;
+  els.selectedAcsTitle.textContent = `Lançamento de visitas mensais`;
+  els.selectedAcsSubtitle.textContent = `ACS selecionado: ${acs.nome} • Posto: ${acs.posto} • Microárea: ${acs.microarea || "não informada"}`;
+  renderAcsList();
 
   // Abre os 12 meses imediatamente, antes mesmo de consultar o Firestore.
   // Assim a enfermeira sempre verá os campos: cidadãos do mês + visitas do mês.
@@ -554,6 +564,13 @@ async function renderMonthsForSelectedAcs() {
   }
 }
 
+function coberturaClasse(percentual) {
+  if (percentual <= 0) return "coverage-zero";
+  if (percentual < 70) return "coverage-low";
+  if (percentual < 85) return "coverage-medium";
+  return "coverage-good";
+}
+
 function montarCamposMensais(visitasPorMes) {
   if (!els.monthsGrid) return;
   els.monthsGrid.innerHTML = "";
@@ -570,7 +587,7 @@ function montarCamposMensais(visitasPorMes) {
       <label>${mesNome}</label>
       <div class="month-fields">
         <div>
-          <span>Quantos cidadãos?</span>
+          <span>Cidadãos cadastrados</span>
           <input
             type="number"
             min="0"
@@ -582,7 +599,7 @@ function montarCamposMensais(visitasPorMes) {
           />
         </div>
         <div>
-          <span>Quantas visitas?</span>
+          <span>Visitas realizadas</span>
           <input
             type="number"
             min="0"
@@ -594,13 +611,17 @@ function montarCamposMensais(visitasPorMes) {
           />
         </div>
       </div>
-      <small class="coverage-info">Cobertura: <strong>${percentualAtual}%</strong></small>
+      <small class="coverage-info ${coberturaClasse(percentualAtual)}">Cobertura: <strong>${percentualAtual}%</strong></small>
     `;
 
     const atualizarCobertura = () => {
       const pessoas = Number(box.querySelector('input[data-field="pessoas"]').value || 0);
       const visitas = Number(box.querySelector('input[data-field="visitas"]').value || 0);
-      box.querySelector(".coverage-info strong").textContent = `${calcularPercentual(visitas, pessoas)}%`;
+      const percentual = calcularPercentual(visitas, pessoas);
+      const badge = box.querySelector(".coverage-info");
+      badge.classList.remove("coverage-zero", "coverage-low", "coverage-medium", "coverage-good");
+      badge.classList.add(coberturaClasse(percentual));
+      badge.querySelector("strong").textContent = `${percentual}%`;
     };
 
     box.querySelectorAll("input").forEach((input) => input.addEventListener("input", atualizarCobertura));
@@ -952,6 +973,14 @@ function bindEvents() {
   els.tabEnfermeira.addEventListener("click", () => openTab("enfermeira"));
   els.tabAdmin.addEventListener("click", () => openTab("admin"));
 
+  document.querySelectorAll("[data-scroll-target]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openTab("enfermeira");
+      const target = document.getElementById(btn.dataset.scrollTarget);
+      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+
   document.querySelectorAll("[data-toggle-password]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const input = $(btn.dataset.togglePassword);
@@ -977,7 +1006,9 @@ onAuthStateChanged(auth, async (user) => {
     currentProfile = await loadUserProfile(user);
     showApp();
 
-    els.userInfo.textContent = `${currentProfile.nome} | ${currentProfile.posto} | ${currentProfile.tipo}`;
+    els.userInfo.textContent = `${currentProfile.posto} • ${currentProfile.tipo}`;
+    const sidebarName = document.getElementById("sidebar-user-name");
+    if (sidebarName) sidebarName.textContent = currentProfile.nome || currentUser.email;
     els.postoName.textContent = currentProfile.posto || "-";
     els.tabAdmin.classList.toggle("hidden", currentProfile.tipo !== "admin");
 

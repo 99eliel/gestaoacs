@@ -4,70 +4,84 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Controle de Visitas ACS</title>
-  <link rel="stylesheet" href="style.css?v=20260713-v7-acs" />
-  <link rel="manifest" href="manifest.json?v=20260713-v7-acs" />
-  <meta name="theme-color" content="#0f766e" />
+  <link rel="stylesheet" href="style.css?v=20260713-v8-acs" />
+  <link rel="manifest" href="manifest.json?v=20260713-v8-acs" />
+  <meta name="theme-color" content="#04756f" />
   <meta name="description" content="Sistema de Controle de Visitas ACS" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Visitas ACS" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v7-acs" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v8-acs" />
 </head>
 <body>
   <div class="developer-banner">
-    <span>Sistema desenvolvido e emprestado por Eliel do Carmo <small id="app-version" class="app-version">v7</small></span>
+    <div class="developer-text">
+      <span class="shield-icon" aria-hidden="true">✓</span>
+      <span>Sistema desenvolvido e emprestado por <strong>Eliel do Carmo</strong></span>
+      <small id="app-version" class="app-version">v8</small>
+    </div>
     <div class="banner-actions">
-      <button id="btn-update-app" type="button" class="banner-install-btn">Atualizar sistema</button>
-      <button id="btn-install-app" type="button" class="banner-install-btn hidden">Instalar app</button>
+      <button id="btn-install-app" type="button" class="banner-btn install hidden">⬇ Instalar app</button>
+      <button id="btn-update-app" type="button" class="banner-btn">↻ Atualizar sistema</button>
     </div>
   </div>
 
   <div id="loading" class="loading">Carregando sistema...</div>
 
   <main id="auth-area" class="auth-container hidden">
-    <section class="auth-card">
-      <div class="brand-box">
-        <div class="brand-icon">+</div>
+    <section class="auth-hero">
+      <div class="auth-brand">
+        <div class="brand-mark">♡</div>
+        <p class="eyebrow">Secretaria Municipal de Saúde</p>
         <h1>Controle de Visitas ACS</h1>
-        <p>Secretaria Municipal de Saúde</p>
+        <p>Registre visitas mensais, acompanhe a cobertura por microárea e visualize os indicadores do posto em poucos cliques.</p>
+        <div class="auth-benefits">
+          <span>✓ Lançamento mensal</span>
+          <span>✓ Cobertura automática</span>
+          <span>✓ Relatório administrativo</span>
+        </div>
       </div>
+    </section>
 
+    <section class="auth-card">
       <div id="login-box">
+        <p class="eyebrow">Acesso ao sistema</p>
         <h2>Entrar</h2>
-        <label>E-mail</label>
-        <input id="login-email" type="email" placeholder="Digite seu e-mail" />
+        <label for="login-email">E-mail</label>
+        <input id="login-email" type="email" placeholder="Digite seu e-mail" autocomplete="email" />
 
-        <label>Senha</label>
+        <label for="login-password">Senha</label>
         <div class="password-row">
-          <input id="login-password" type="password" placeholder="Digite sua senha" />
+          <input id="login-password" type="password" placeholder="Digite sua senha" autocomplete="current-password" />
           <button type="button" class="small-btn" data-toggle-password="login-password">Ver</button>
         </div>
 
-        <button id="btn-login" class="primary-btn">Entrar</button>
+        <button id="btn-login" class="primary-btn">Entrar no painel</button>
         <button id="btn-show-register" class="link-btn">Criar cadastro de enfermeira</button>
         <button id="btn-reset-password" class="link-btn">Esqueci minha senha</button>
       </div>
 
       <div id="register-box" class="hidden">
+        <p class="eyebrow">Novo acesso</p>
         <h2>Cadastro da enfermeira</h2>
-        <label>Nome completo</label>
-        <input id="register-name" type="text" placeholder="Ex.: Ana Paula Silva" />
+        <label for="register-name">Nome completo</label>
+        <input id="register-name" type="text" placeholder="Ex.: Ana Paula Silva" autocomplete="name" />
 
-        <label>Nome do posto</label>
+        <label for="register-posto">Nome do posto</label>
         <input id="register-posto" type="text" placeholder="Ex.: ESF Central" />
 
-        <label>E-mail</label>
-        <input id="register-email" type="email" placeholder="Digite seu e-mail" />
+        <label for="register-email">E-mail</label>
+        <input id="register-email" type="email" placeholder="Digite seu e-mail" autocomplete="email" />
 
-        <label>Senha</label>
+        <label for="register-password">Senha</label>
         <div class="password-row">
-          <input id="register-password" type="password" placeholder="Mínimo 6 caracteres" />
+          <input id="register-password" type="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password" />
           <button type="button" class="small-btn" data-toggle-password="register-password">Ver</button>
         </div>
 
-        <label>Confirmar senha</label>
+        <label for="register-password-confirm">Confirmar senha</label>
         <div class="password-row">
-          <input id="register-password-confirm" type="password" placeholder="Repita sua senha" />
+          <input id="register-password-confirm" type="password" placeholder="Repita sua senha" autocomplete="new-password" />
           <button type="button" class="small-btn" data-toggle-password="register-password-confirm">Ver</button>
         </div>
 
@@ -79,146 +93,262 @@
     </section>
   </main>
 
-  <main id="app-area" class="hidden">
-    <header class="topbar">
-      <div>
-        <h1>Controle de Visitas ACS</h1>
-        <p id="user-info">Usuário</p>
-      </div>
-      <button id="btn-logout" class="danger-btn">Sair</button>
-    </header>
-
-    <nav class="tabs">
-      <button id="tab-enfermeira" class="tab-btn active">Meu Posto</button>
-      <button id="tab-admin" class="tab-btn hidden">Admin</button>
-    </nav>
-
-    <section id="enfermeira-panel" class="panel">
-      <div class="grid two-cols">
-        <div class="card">
-          <h2>Adicionar ACS</h2>
-          <label>Nome do ACS</label>
-          <input id="acs-name" type="text" placeholder="Ex.: João da Silva" />
-          <label>Microárea <span class="muted">opcional</span></label>
-          <input id="acs-microarea" type="text" placeholder="Ex.: 01" />
-          <p class="muted">O total de cidadãos cadastrados será informado mês a mês no lançamento, para manter o histórico correto.</p>
-          <button id="btn-add-acs" class="primary-btn">Salvar ACS</button>
-          <p id="acs-message" class="message"></p>
-        </div>
-
-        <div class="card summary-card">
-          <h2>Resumo do posto</h2>
-          <p><strong>Posto:</strong> <span id="posto-name">-</span></p>
-          <p><strong>ACS cadastrados:</strong> <span id="total-acs">0</span></p>
-          <p><strong>Visitas no mês atual:</strong> <span id="total-current-month">0</span></p>
-          <p><strong>Cobertura média no mês atual:</strong> <span id="avg-current-coverage">0%</span></p>
+  <main id="app-area" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="app-logo">✚</div>
+        <div>
+          <h1>Controle de<br>Visitas ACS</h1>
+          <p>Gestão mensal</p>
         </div>
       </div>
 
-      <div class="card">
-        <div class="section-title-row">
+      <div class="sidebar-user">
+        <div class="user-avatar">ACS</div>
+        <div>
+          <strong id="sidebar-user-name">Usuário</strong>
+          <span id="user-info">Carregando...</span>
+        </div>
+      </div>
+
+      <nav class="tabs sidebar-menu" aria-label="Navegação principal">
+        <button id="tab-enfermeira" class="tab-btn active" type="button">
+          <span>⌂</span>
+          <strong>Dashboard</strong>
+        </button>
+        <button id="tab-admin" class="tab-btn hidden" type="button">
+          <span>▣</span>
+          <strong>Admin</strong>
+        </button>
+        <button class="tab-btn ghost" type="button" data-scroll-target="acs-list">
+          <span>👥</span>
+          <strong>ACS</strong>
+        </button>
+        <button class="tab-btn ghost" type="button" data-scroll-target="visitas-card">
+          <span>▦</span>
+          <strong>Lançamentos</strong>
+        </button>
+      </nav>
+
+      <div class="quick-tip">
+        <strong>Dica rápida</strong>
+        <p>Informe a população e as visitas de cada mês. A cobertura será calculada automaticamente.</p>
+      </div>
+    </aside>
+
+    <section class="content-area">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Painel operacional</p>
+          <h1>Bem-vindo ao Controle de Visitas ACS</h1>
+          <p>Acompanhe indicadores do posto, cadastre ACS e registre a produção mensal da equipe.</p>
+        </div>
+        <button id="btn-logout" class="danger-btn">Sair</button>
+      </header>
+
+      <section id="enfermeira-panel" class="panel">
+        <div class="kpi-grid">
+          <article class="kpi-card">
+            <div class="kpi-icon">👥</div>
+            <div>
+              <span>ACS cadastrados</span>
+              <strong id="total-acs">0</strong>
+              <small>Total de ACS ativos</small>
+            </div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon green">▦</div>
+            <div>
+              <span>Visitas no mês</span>
+              <strong id="total-current-month">0</strong>
+              <small>Realizadas no mês atual</small>
+            </div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon blue">↗</div>
+            <div>
+              <span>Cobertura média</span>
+              <strong id="avg-current-coverage">0%</strong>
+              <small>Média do mês atual</small>
+            </div>
+          </article>
+          <article class="kpi-card">
+            <div class="kpi-icon pin">⌖</div>
+            <div>
+              <span>Posto</span>
+              <strong id="posto-name">-</strong>
+              <small>Unidade de saúde</small>
+            </div>
+          </article>
+        </div>
+
+        <div class="workspace-grid">
+          <div class="left-column">
+            <div class="card form-card">
+              <div class="card-title">
+                <div class="title-icon">＋</div>
+                <div>
+                  <h2>Adicionar novo ACS</h2>
+                  <p>Cadastre os agentes vinculados ao seu posto.</p>
+                </div>
+              </div>
+
+              <label for="acs-name">Nome do ACS</label>
+              <input id="acs-name" type="text" placeholder="Ex.: João da Silva" />
+
+              <label for="acs-microarea">Microárea <span class="muted">opcional</span></label>
+              <input id="acs-microarea" type="text" placeholder="Ex.: 01" />
+
+              <div class="info-line">A quantidade de cidadãos cadastrados será informada mês a mês no lançamento.</div>
+              <button id="btn-add-acs" class="primary-btn">Salvar ACS</button>
+              <p id="acs-message" class="message"></p>
+            </div>
+
+            <div class="card acs-card">
+              <div class="section-title-row compact">
+                <div>
+                  <h2>Lista de ACS</h2>
+                  <p class="muted list-help">Selecione um ACS para lançar visitas.</p>
+                </div>
+                <span class="soft-badge">Ativos</span>
+              </div>
+              <div class="search-row">
+                <input id="search-acs" type="text" placeholder="Pesquisar ACS..." />
+              </div>
+              <div id="acs-list" class="acs-list empty-box">Nenhum ACS cadastrado ainda.</div>
+            </div>
+          </div>
+
+          <div class="right-column">
+            <div id="visitas-card" class="card visits-card hidden">
+              <div class="section-title-row wrap">
+                <div class="card-title no-margin">
+                  <div class="title-icon">▦</div>
+                  <div>
+                    <h2 id="selected-acs-title">Lançamento de visitas mensais</h2>
+                    <p id="selected-acs-subtitle" class="muted"></p>
+                  </div>
+                </div>
+                <div class="year-box">
+                  <label for="year-select">Ano</label>
+                  <select id="year-select"></select>
+                </div>
+              </div>
+
+              <div class="info-box">Informe os dados de cada mês. A cobertura é calculada automaticamente usando visitas ÷ cidadãos cadastrados.</div>
+              <div id="months-grid" class="months-grid"></div>
+              <button id="btn-save-visits" class="primary-btn big-save">Salvar visitas do ano</button>
+              <p id="visits-message" class="message"></p>
+            </div>
+
+            <div class="card empty-state-card" id="empty-launch-hint">
+              <div class="empty-illustration">📋</div>
+              <h2>Lançamento mensal</h2>
+              <p>Cadastre ou selecione um ACS na lista ao lado para abrir os 12 meses com os campos de cidadãos, visitas e cobertura.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="admin-panel" class="panel hidden">
+        <div class="admin-hero card">
           <div>
-            <h2>ACS cadastrados</h2>
-            <p class="muted list-help">Depois de cadastrar, toque no ACS ou em <strong>Abrir lançamento de visitas</strong>.</p>
+            <p class="eyebrow">Área administrativa</p>
+            <h2>Painel geral da Secretaria</h2>
+            <p>Consulte relatórios, acompanhe postos e libere novos administradores.</p>
           </div>
-          <input id="search-acs" type="text" placeholder="Pesquisar ACS..." />
+          <button id="btn-export-csv" class="secondary-btn">Exportar CSV</button>
         </div>
-        <div id="acs-list" class="acs-list empty-box">Nenhum ACS cadastrado ainda.</div>
-      </div>
 
-      <div id="visitas-card" class="card hidden">
-        <div class="section-title-row wrap">
-          <div>
-            <h2 id="selected-acs-title">Lançamento mensal</h2>
-            <p id="selected-acs-subtitle" class="muted"></p>
+        <div class="kpi-grid admin-kpis">
+          <article class="mini-card"><span>Postos</span><strong id="admin-total-postos">0</strong></article>
+          <article class="mini-card"><span>Enfermeiras</span><strong id="admin-total-enfermeiras">0</strong></article>
+          <article class="mini-card"><span>ACS</span><strong id="admin-total-acs">0</strong></article>
+          <article class="mini-card"><span>Visitas filtradas</span><strong id="admin-total-visitas">0</strong></article>
+        </div>
+
+        <div class="admin-grid">
+          <div class="card">
+            <div class="card-title">
+              <div class="title-icon">★</div>
+              <div>
+                <h2>Adicionar administrador</h2>
+                <p>Libere manualmente outro e-mail para acessar o painel administrativo.</p>
+              </div>
+            </div>
+            <label for="admin-name">Nome do administrador</label>
+            <input id="admin-name" type="text" placeholder="Ex.: Coordenadora Maria" />
+            <label for="admin-email">E-mail do administrador</label>
+            <input id="admin-email" type="email" placeholder="Ex.: coordenacao@cidade.go.gov.br" />
+            <label for="admin-posto">Posto/Setor</label>
+            <input id="admin-posto" type="text" placeholder="Ex.: Secretaria de Saúde" />
+            <button id="btn-add-admin" class="primary-btn">Liberar administrador</button>
+            <p id="admin-message" class="message"></p>
           </div>
-          <div class="year-box">
-            <label>Ano</label>
-            <select id="year-select"></select>
-          </div>
-        </div>
-        <div id="months-grid" class="months-grid"></div>
-        <button id="btn-save-visits" class="primary-btn">Salvar visitas do ano</button>
-        <p id="visits-message" class="message"></p>
-      </div>
-    </section>
 
-    <section id="admin-panel" class="panel hidden">
-      <div class="grid four-cols">
-        <div class="mini-card"><span>Postos</span><strong id="admin-total-postos">0</strong></div>
-        <div class="mini-card"><span>Enfermeiras</span><strong id="admin-total-enfermeiras">0</strong></div>
-        <div class="mini-card"><span>ACS</span><strong id="admin-total-acs">0</strong></div>
-        <div class="mini-card"><span>Visitas filtradas</span><strong id="admin-total-visitas">0</strong></div>
-      </div>
-
-      <div class="grid two-cols">
-        <div class="card">
-          <h2>Adicionar administrador</h2>
-          <p class="muted">Cadastre o e-mail que também poderá acessar o painel administrativo.</p>
-          <label>Nome do administrador</label>
-          <input id="admin-name" type="text" placeholder="Ex.: Coordenadora Maria" />
-          <label>E-mail do administrador</label>
-          <input id="admin-email" type="email" placeholder="Ex.: coordenacao@cidade.go.gov.br" />
-          <label>Posto/Setor</label>
-          <input id="admin-posto" type="text" placeholder="Ex.: Secretaria de Saúde" />
-          <button id="btn-add-admin" class="primary-btn">Liberar administrador</button>
-          <p id="admin-message" class="message"></p>
-        </div>
-
-        <div class="card">
-          <h2>Administradores liberados</h2>
-          <div id="admin-list" class="admin-list empty-box">Nenhum administrador adicional cadastrado.</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-title-row wrap">
-          <h2>Relatório geral</h2>
-          <div class="filters">
-            <select id="admin-year-select"></select>
-            <select id="admin-month-select">
-              <option value="0">Ano inteiro</option>
-              <option value="1">Janeiro</option>
-              <option value="2">Fevereiro</option>
-              <option value="3">Março</option>
-              <option value="4">Abril</option>
-              <option value="5">Maio</option>
-              <option value="6">Junho</option>
-              <option value="7">Julho</option>
-              <option value="8">Agosto</option>
-              <option value="9">Setembro</option>
-              <option value="10">Outubro</option>
-              <option value="11">Novembro</option>
-              <option value="12">Dezembro</option>
-            </select>
-            <input id="admin-search" type="text" placeholder="Filtrar posto, ACS ou enfermeira" />
-            <button id="btn-export-csv" class="secondary-btn">Exportar CSV</button>
+          <div class="card">
+            <div class="card-title">
+              <div class="title-icon">✓</div>
+              <div>
+                <h2>Administradores liberados</h2>
+                <p>Contas com acesso administrativo.</p>
+              </div>
+            </div>
+            <div id="admin-list" class="admin-list empty-box">Nenhum administrador adicional cadastrado.</div>
           </div>
         </div>
 
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Posto</th>
-                <th>Enfermeira</th>
-                <th>ACS</th>
-                <th>Cidadãos cadastrados no mês</th>
-                <th>Ano</th>
-                <th>Mês</th>
-                <th>Visitas</th>
-                <th>Cobertura</th>
-              </tr>
-            </thead>
-            <tbody id="admin-report-body">
-              <tr><td colspan="8">Nenhum dado encontrado.</td></tr>
-            </tbody>
-          </table>
+        <div class="card report-card">
+          <div class="section-title-row wrap report-head">
+            <div>
+              <h2>Relatório geral</h2>
+              <p class="muted">Filtre os lançamentos por ano, mês, posto, ACS ou enfermeira.</p>
+            </div>
+            <div class="filters">
+              <select id="admin-year-select"></select>
+              <select id="admin-month-select">
+                <option value="0">Ano inteiro</option>
+                <option value="1">Janeiro</option>
+                <option value="2">Fevereiro</option>
+                <option value="3">Março</option>
+                <option value="4">Abril</option>
+                <option value="5">Maio</option>
+                <option value="6">Junho</option>
+                <option value="7">Julho</option>
+                <option value="8">Agosto</option>
+                <option value="9">Setembro</option>
+                <option value="10">Outubro</option>
+                <option value="11">Novembro</option>
+                <option value="12">Dezembro</option>
+              </select>
+              <input id="admin-search" type="text" placeholder="Filtrar posto, ACS ou enfermeira" />
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Posto</th>
+                  <th>Enfermeira</th>
+                  <th>ACS</th>
+                  <th>Cidadãos cadastrados no mês</th>
+                  <th>Ano</th>
+                  <th>Mês</th>
+                  <th>Visitas</th>
+                  <th>Cobertura</th>
+                </tr>
+              </thead>
+              <tbody id="admin-report-body">
+                <tr><td colspan="8">Nenhum dado encontrado.</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </section>
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260713-v7-acs"></script>
+  <script type="module" src="app.js?v=20260713-v8-acs"></script>
 </body>
 </html>
