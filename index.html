@@ -4,21 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Controle de Visitas ACS</title>
-  <link rel="stylesheet" href="style.css?v=20260713-v11-relatorios-melhorados" />
-  <link rel="manifest" href="manifest.json?v=20260713-v11-relatorios-melhorados" />
+  <link rel="stylesheet" href="style.css?v=20260713-v12-relatorios-impressao" />
+  <link rel="manifest" href="manifest.json?v=20260713-v12-relatorios-impressao" />
   <meta name="theme-color" content="#04756f" />
   <meta name="description" content="Sistema de Controle de Visitas ACS" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Visitas ACS" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v11-relatorios-melhorados" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=20260713-v12-relatorios-impressao" />
 </head>
 <body>
   <div class="developer-banner">
     <div class="developer-text">
       <span class="shield-icon" aria-hidden="true">✓</span>
       <span>Sistema desenvolvido e emprestado por <strong>Eliel do Carmo</strong></span>
-      <small id="app-version" class="app-version">v11</small>
+      <small id="app-version" class="app-version">v12</small>
     </div>
     <div class="banner-actions">
       <button id="btn-install-app" type="button" class="banner-btn install hidden">⬇ Instalar app</button>
@@ -255,104 +255,83 @@
       </section>
 
       <section id="relatorios-panel" class="panel hidden">
-        <div class="reports-hero card">
+        <div class="reports-hero card clean-reports-hero">
           <div>
-            <p class="eyebrow">Relatórios inteligentes</p>
-            <h2>Relatórios de visitas e cobertura</h2>
-            <p>Gere relatórios mensais, por período, por ACS específico, ranking de cobertura e consolidados. Enfermeiras visualizam apenas seus ACS; administradores visualizam todos os postos.</p>
+            <p class="eyebrow">Relatórios</p>
+            <h2>Emissão de relatórios</h2>
+            <p>Escolha o tipo de relatório, informe o período e gere uma visão limpa para acompanhar visitas e cobertura. A impressão agora sai como documento, não como print da tela.</p>
           </div>
           <div class="report-actions">
             <button id="btn-run-report" class="primary-btn">Gerar relatório</button>
             <button id="btn-export-report-csv" class="secondary-btn">Exportar CSV</button>
-            <button id="btn-print-report" class="secondary-btn">Imprimir</button>
+            <button id="btn-print-report" class="secondary-btn">Imprimir relatório</button>
           </div>
         </div>
 
-        <div class="kpi-grid report-kpis">
-          <article class="mini-card"><span>Total de visitas</span><strong id="report-total-visits">0</strong></article>
-          <article class="mini-card"><span>Cidadãos considerados</span><strong id="report-total-citizens">0</strong></article>
-          <article class="mini-card"><span>Cobertura geral</span><strong id="report-coverage">0%</strong></article>
-          <article class="mini-card"><span>ACS no relatório</span><strong id="report-total-acs">0</strong></article>
-        </div>
-
-        <div class="card report-builder-card report-wizard-card">
-          <div class="section-title-row wrap report-head">
-            <div>
-              <p class="eyebrow">Filtros guiados</p>
-              <h2>Montar relatório</h2>
-              <p class="muted">Escolha primeiro o modelo do relatório. Depois ajuste ano, meses, ACS e pesquisa conforme a necessidade.</p>
-            </div>
-          </div>
-
-          <select id="report-type" class="visually-hidden-select" aria-label="Tipo de relatório">
-            <option value="monthly_all">Mensal de todos os ACS</option>
-            <option value="period_all">Período de todos os ACS</option>
-            <option value="period_acs">Período de um ACS específico</option>
-            <option value="annual_acs">Ano completo de um ACS</option>
-            <option value="ranking_coverage">Ranking de cobertura</option>
-            <option value="consolidated">Consolidado por posto/enfermeira</option>
-          </select>
-
-          <div class="report-step">
-            <div class="step-header">
-              <span class="step-number">1</span>
+        <div class="report-page-grid">
+          <div class="card report-type-card">
+            <div class="report-card-header">
+              <span class="step-pill">1</span>
               <div>
-                <h3>Escolha o modelo</h3>
-                <p>Use estes atalhos para não se perder nos filtros.</p>
+                <h2>Tipo de relatório</h2>
+                <p>Escolha o que deseja analisar.</p>
               </div>
             </div>
 
-            <div class="report-template-grid" role="group" aria-label="Modelos de relatório">
-              <button type="button" class="report-template-card active" data-report-template="monthly_all">
-                <span class="template-icon">📅</span>
-                <strong>Mês de todos os ACS</strong>
-                <small>Ex.: ver janeiro de toda a equipe.</small>
+            <select id="report-type" class="visually-hidden-select" aria-label="Tipo de relatório">
+              <option value="monthly_all">Mensal da equipe</option>
+              <option value="period_all">Período da equipe</option>
+              <option value="period_acs">ACS específico por período</option>
+              <option value="annual_acs">Ano completo de um ACS</option>
+              <option value="ranking_coverage">Ranking de cobertura</option>
+              <option value="consolidated">Consolidado por posto/enfermeira</option>
+            </select>
+
+            <div class="simple-report-options" role="group" aria-label="Tipos de relatório">
+              <button type="button" class="report-type-option active" data-report-template="monthly_all">
+                <span class="option-icon">📅</span>
+                <span><strong>Mensal da equipe</strong><small>Todos os ACS em um único mês.</small></span>
               </button>
-              <button type="button" class="report-template-card" data-report-template="period_all">
-                <span class="template-icon">↔</span>
-                <strong>Período de todos</strong>
-                <small>Ex.: janeiro a março de todos os ACS.</small>
+              <button type="button" class="report-type-option" data-report-template="period_all">
+                <span class="option-icon">↔</span>
+                <span><strong>Período da equipe</strong><small>Todos os ACS entre dois meses.</small></span>
               </button>
-              <button type="button" class="report-template-card" data-report-template="period_acs">
-                <span class="template-icon">👤</span>
-                <strong>Período de 1 ACS</strong>
-                <small>Ex.: 3 meses da Maria das Graças.</small>
+              <button type="button" class="report-type-option" data-report-template="period_acs">
+                <span class="option-icon">👤</span>
+                <span><strong>ACS específico</strong><small>Um ACS em 2, 3 ou mais meses.</small></span>
               </button>
-              <button type="button" class="report-template-card" data-report-template="annual_acs">
-                <span class="template-icon">🗓️</span>
-                <strong>Ano de 1 ACS</strong>
-                <small>Janeiro a dezembro de um ACS.</small>
+              <button type="button" class="report-type-option" data-report-template="annual_acs">
+                <span class="option-icon">🗓️</span>
+                <span><strong>Ano completo</strong><small>Janeiro a dezembro de um ACS.</small></span>
               </button>
-              <button type="button" class="report-template-card" data-report-template="ranking_coverage">
-                <span class="template-icon">🏆</span>
-                <strong>Ranking</strong>
-                <small>Ordena ACS por maior cobertura.</small>
+              <button type="button" class="report-type-option" data-report-template="ranking_coverage">
+                <span class="option-icon">🏆</span>
+                <span><strong>Ranking</strong><small>Ordena por maior cobertura.</small></span>
               </button>
-              <button type="button" class="report-template-card" data-report-template="consolidated">
-                <span class="template-icon">🏥</span>
-                <strong>Consolidado</strong>
-                <small>Agrupa por posto e enfermeira.</small>
+              <button type="button" class="report-type-option" data-report-template="consolidated">
+                <span class="option-icon">🏥</span>
+                <span><strong>Consolidado</strong><small>Total por posto e enfermeira.</small></span>
               </button>
             </div>
           </div>
 
-          <div class="report-step report-filter-step">
-            <div class="step-header">
-              <span class="step-number">2</span>
+          <div class="card report-filter-card">
+            <div class="report-card-header">
+              <span class="step-pill">2</span>
               <div>
-                <h3>Defina o período e refine</h3>
-                <p>Os campos mudam conforme o modelo escolhido.</p>
+                <h2>Filtros</h2>
+                <p>Informe o período e refine somente se precisar.</p>
               </div>
             </div>
 
-            <div class="quick-periods" aria-label="Atalhos de período">
+            <div class="quick-periods compact-quick-periods" aria-label="Atalhos de período">
               <button type="button" class="quick-period-btn" data-period-preset="current">Mês atual</button>
               <button type="button" class="quick-period-btn" data-period-preset="last3">Últimos 3 meses</button>
               <button type="button" class="quick-period-btn" data-period-preset="fullYear">Ano inteiro</button>
               <button type="button" class="quick-period-btn light" data-period-preset="clear">Limpar pesquisa</button>
             </div>
 
-            <div class="report-controls improved-report-controls">
+            <div class="report-controls simple-report-controls">
               <div class="field-group report-field-year">
                 <label for="report-year-select">Ano</label>
                 <select id="report-year-select"></select>
@@ -399,31 +378,38 @@
                 <select id="report-acs-select">
                   <option value="">Todos os ACS</option>
                 </select>
-                <small class="field-hint" id="report-acs-hint">Opcional para filtrar somente um ACS.</small>
+                <small class="field-hint" id="report-acs-hint">Opcional para alguns relatórios.</small>
               </div>
 
               <div class="field-group report-search-field">
-                <label for="report-search">Pesquisar dentro do resultado</label>
+                <label for="report-search">Pesquisar no resultado</label>
                 <input id="report-search" type="text" placeholder="Posto, enfermeira, ACS ou microárea" />
               </div>
             </div>
 
-            <div id="report-preview" class="report-preview">
-              <strong>Resumo do filtro:</strong>
-              <span>Mensal de todos os ACS.</span>
+            <div id="report-preview" class="report-preview clean-preview">
+              <strong>Relatório selecionado:</strong>
+              <span>Mensal da equipe.</span>
             </div>
-          </div>
 
-          <div id="report-help" class="info-box">Mensal de todos os ACS: mostra cada ACS no mês selecionado.</div>
-          <p id="report-message" class="message"></p>
+            <div id="report-help" class="info-box">Mensal da equipe: mostra cada ACS no mês selecionado.</div>
+            <p id="report-message" class="message"></p>
+          </div>
         </div>
 
-        <div class="reports-two-columns">
+        <div class="kpi-grid report-kpis">
+          <article class="mini-card"><span>Total de visitas</span><strong id="report-total-visits">0</strong></article>
+          <article class="mini-card"><span>Cidadãos considerados</span><strong id="report-total-citizens">0</strong></article>
+          <article class="mini-card"><span>Cobertura geral</span><strong id="report-coverage">0%</strong></article>
+          <article class="mini-card"><span>ACS no relatório</span><strong id="report-total-acs">0</strong></article>
+        </div>
+
+        <div class="reports-two-columns compact-insights">
           <div class="card report-summary-card">
             <div class="card-title no-margin">
               <div class="title-icon">↗</div>
               <div>
-                <h2>Leitura rápida</h2>
+                <h2>Resumo do relatório</h2>
                 <p id="report-summary-text" class="muted">Gere um relatório para visualizar os principais indicadores.</p>
               </div>
             </div>
@@ -442,12 +428,13 @@
           </div>
         </div>
 
-        <div class="card report-card advanced-report-card">
+        <div class="card report-card advanced-report-card clean-result-card">
           <div class="section-title-row wrap report-head">
             <div>
               <h2 id="report-title">Resultado do relatório</h2>
               <p id="report-subtitle" class="muted">Os resultados aparecerão aqui.</p>
             </div>
+            <div class="print-note">A impressão usa somente esta tabela e os indicadores do filtro.</div>
           </div>
 
           <div class="table-wrapper">
@@ -573,6 +560,6 @@
     </section>
   </main>
 
-  <script type="module" src="app.js?v=20260713-v11-relatorios-melhorados"></script>
+  <script type="module" src="app.js?v=20260713-v12-relatorios-impressao"></script>
 </body>
 </html>

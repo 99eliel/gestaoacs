@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v11.0.0-20260713";
+const APP_VERSION = "v12.0.0-20260713";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
@@ -808,7 +808,7 @@ function populateReportAcsOptions() {
 function getReportTypeMeta(type) {
   const meta = {
     monthly_all: {
-      label: "Mês de todos os ACS",
+      label: "Mensal da equipe",
       help: "Mostra todos os ACS no mês selecionado. Ideal para fechar a produção mensal do posto.",
       startLabel: "Mês",
       showEnd: false,
@@ -817,7 +817,7 @@ function getReportTypeMeta(type) {
       periodText: "um único mês"
     },
     period_all: {
-      label: "Período de todos os ACS",
+      label: "Período da equipe",
       help: "Mostra todos os lançamentos entre o mês inicial e final. Exemplo: janeiro a março de toda a equipe.",
       startLabel: "Mês inicial",
       showEnd: true,
@@ -826,7 +826,7 @@ function getReportTypeMeta(type) {
       periodText: "um período"
     },
     period_acs: {
-      label: "Período de um ACS específico",
+      label: "ACS específico por período",
       help: "Escolha um ACS e defina o intervalo. Ideal para ver 2, 3 ou mais meses de uma pessoa específica.",
       startLabel: "Mês inicial",
       showEnd: true,
@@ -886,9 +886,18 @@ function updateReportPreview() {
   const meta = getReportTypeMeta(config.type);
   const acsText = config.acsId
     ? (acsCache.find((item) => item.id === config.acsId)?.nome || "ACS selecionado")
-    : (meta.acsRequired ? "nenhum ACS selecionado" : "todos os ACS");
-  const pesquisaText = config.search ? ` • Pesquisa: “${escapeHtml(config.search)}”` : "";
-  els.reportPreview.innerHTML = `<strong>Resumo do filtro:</strong> <span>${escapeHtml(meta.label)} • ${escapeHtml(periodoLabel(config.inicio, config.fim, config.ano))} • ${escapeHtml(acsText)}${pesquisaText}</span>`;
+    : (meta.acsRequired ? "selecione um ACS" : "todos os ACS");
+  const pesquisaText = config.search ? `Pesquisa: “${escapeHtml(config.search)}”` : "Sem pesquisa adicional";
+
+  els.reportPreview.innerHTML = `
+    <strong>Relatório selecionado</strong>
+    <div class="preview-tags">
+      <span><b>Tipo:</b> ${escapeHtml(meta.label)}</span>
+      <span><b>Período:</b> ${escapeHtml(periodoLabel(config.inicio, config.fim, config.ano))}</span>
+      <span><b>ACS:</b> ${escapeHtml(acsText)}</span>
+      <span><b>Filtro:</b> ${pesquisaText}</span>
+    </div>
+  `;
 }
 
 function updateReportHelp() {
@@ -1098,9 +1107,9 @@ function buildReportRows(visits, config) {
 
 function reportTypeTitle(type) {
   const titles = {
-    monthly_all: "Relatório mensal de todos os ACS",
-    period_all: "Relatório por período de todos os ACS",
-    period_acs: "Relatório por período de ACS específico",
+    monthly_all: "Relatório mensal da equipe",
+    period_all: "Relatório por período da equipe",
+    period_acs: "Relatório de ACS específico por período",
     annual_acs: "Relatório anual de ACS específico",
     ranking_coverage: "Ranking de cobertura dos ACS",
     consolidated: "Relatório consolidado por posto/enfermeira"
@@ -1309,12 +1318,158 @@ function exportReportCsv() {
   URL.revokeObjectURL(url);
 }
 
+function printableRowsHtml(rows) {
+  return rows.map((item, index) => {
+    const percent = Number(item.coberturaPercentual || 0);
+    return `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(item.periodo)}</td>
+        <td>${escapeHtml(item.posto)}</td>
+        <td>${escapeHtml(item.nomeEnfermeira)}</td>
+        <td>${escapeHtml(item.nomeAcs)}</td>
+        <td>${escapeHtml(item.microarea || "-")}</td>
+        <td>${Number(item.pessoasCadastradas || 0)}</td>
+        <td>${Number(item.quantidade || 0)}</td>
+        <td>${percent}%</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function buildPrintReportHtml() {
+  const config = getReportConfig();
+  const totalVisitas = reportsRenderedRows.reduce((sum, item) => sum + Number(item.quantidade || 0), 0);
+  const totalCidadaos = reportsRenderedRows.reduce((sum, item) => sum + Number(item.pessoasCadastradas || 0), 0);
+  const coberturaGeral = calcularPercentual(totalVisitas, totalCidadaos);
+  const acsUnicos = new Set(reportsRenderedRows.map((item) => item.acsId || item.nomeAcs).filter(Boolean));
+  const unidade = currentProfile?.tipo === "admin" ? "Todos os postos conforme filtros" : `Posto ${currentProfile?.posto || "-"}`;
+  const geradoEm = new Date().toLocaleString("pt-BR");
+  const subtitulo = `${periodoLabel(config.inicio, config.fim, config.ano)} • ${unidade}`;
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>${escapeHtml(reportTypeTitle(config.type))}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; color: #111827; margin: 0; background: #fff; }
+    .page { padding: 28px; }
+    .top { border-bottom: 3px solid #0f766e; padding-bottom: 16px; margin-bottom: 18px; display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; }
+    .brand small { display: block; color: #0f766e; font-weight: 700; margin-bottom: 6px; }
+    h1 { margin: 0; color: #0f172a; font-size: 24px; }
+    .subtitle { color: #475569; margin: 6px 0 0; font-size: 13px; }
+    .meta { text-align: right; color: #475569; font-size: 12px; line-height: 1.45; }
+    .notice { background: #ecfdf5; color: #065f46; border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px 12px; font-weight: 700; margin: 14px 0 18px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+    .kpi { border: 1px solid #dbe4ea; border-radius: 12px; padding: 12px; }
+    .kpi span { display: block; color: #64748b; font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: .03em; }
+    .kpi strong { display: block; margin-top: 4px; color: #0f766e; font-size: 22px; }
+    .filter-box { border: 1px solid #dbe4ea; border-radius: 12px; padding: 12px; margin-bottom: 18px; font-size: 12px; color: #334155; }
+    .filter-box b { color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { background: #0f766e; color: #fff; text-align: left; padding: 8px; border: 1px solid #0f766e; }
+    td { padding: 8px; border: 1px solid #dbe4ea; vertical-align: top; }
+    tbody tr:nth-child(even) { background: #f8fafc; }
+    .footer { margin-top: 18px; color: #64748b; font-size: 11px; display: flex; justify-content: space-between; border-top: 1px solid #dbe4ea; padding-top: 12px; }
+    @page { margin: 12mm; }
+    @media print {
+      .page { padding: 0; }
+      .top { break-inside: avoid; }
+      .kpis, .filter-box { break-inside: avoid; }
+      tr { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="top">
+      <div class="brand">
+        <small>Secretaria Municipal de Saúde</small>
+        <h1>${escapeHtml(reportTypeTitle(config.type))}</h1>
+        <p class="subtitle">${escapeHtml(subtitulo)}</p>
+      </div>
+      <div class="meta">
+        <strong>Gerado em:</strong> ${escapeHtml(geradoEm)}<br />
+        <strong>Usuário:</strong> ${escapeHtml(currentProfile?.nome || currentUser?.email || "-")}<br />
+        <strong>Perfil:</strong> ${escapeHtml(currentProfile?.tipo || "-")}
+      </div>
+    </section>
+
+    <div class="notice">Sistema desenvolvido e emprestado por Eliel do Carmo</div>
+
+    <section class="kpis">
+      <div class="kpi"><span>Total de visitas</span><strong>${totalVisitas}</strong></div>
+      <div class="kpi"><span>Cidadãos considerados</span><strong>${totalCidadaos}</strong></div>
+      <div class="kpi"><span>Cobertura geral</span><strong>${coberturaGeral}%</strong></div>
+      <div class="kpi"><span>ACS no relatório</span><strong>${acsUnicos.size}</strong></div>
+    </section>
+
+    <section class="filter-box">
+      <b>Filtros aplicados:</b>
+      Tipo: ${escapeHtml(reportTypeTitle(config.type))} •
+      Período: ${escapeHtml(periodoLabel(config.inicio, config.fim, config.ano))} •
+      Unidade: ${escapeHtml(unidade)} •
+      Pesquisa: ${config.search ? escapeHtml(config.search) : "sem pesquisa"}
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Período</th>
+          <th>Posto</th>
+          <th>Enfermeira</th>
+          <th>ACS</th>
+          <th>Microárea</th>
+          <th>Cidadãos</th>
+          <th>Visitas</th>
+          <th>Cobertura</th>
+        </tr>
+      </thead>
+      <tbody>${printableRowsHtml(reportsRenderedRows)}</tbody>
+    </table>
+
+    <section class="footer">
+      <span>Relatório gerado automaticamente pelo Controle de Visitas ACS.</span>
+      <span>${escapeHtml(APP_VERSION)}</span>
+    </section>
+  </main>
+</body>
+</html>`;
+}
+
 function printCurrentReport() {
   if (!reportsRenderedRows.length) {
     alert("Gere um relatório antes de imprimir.");
     return;
   }
-  window.print();
+
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.setAttribute("aria-hidden", "true");
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(buildPrintReportHtml());
+  doc.close();
+
+  iframe.onload = () => {
+    const cleanup = () => setTimeout(() => iframe.remove(), 500);
+    iframe.contentWindow.addEventListener("afterprint", cleanup, { once: true });
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+    setTimeout(() => {
+      if (document.body.contains(iframe)) iframe.remove();
+    }, 15000);
+  };
 }
 
 

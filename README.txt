@@ -1,4 +1,4 @@
-SISTEMA DE CONTROLE DE VISITAS ACS - V11 RELATÓRIOS MELHORADOS
+SISTEMA DE CONTROLE DE VISITAS ACS - V12 RELATÓRIOS E IMPRESSÃO
 
 Projeto Firebase configurado:
 gestaoacs-f4bdd
@@ -92,3 +92,14 @@ NOVIDADES DA V11
 - Atalhos de período: mês atual, últimos 3 meses, ano inteiro e limpar pesquisa.
 - Resumo do filtro antes de gerar o relatório.
 - Campos escondidos automaticamente quando não são necessários.
+
+
+
+VERSÃO v12.0.0-20260713
+- Aba Relatórios simplificada para ficar menos confusa.
+- Tipos de relatório organizados em cartões claros: mensal, período, ACS específico, ano completo, ranking e consolidado.
+- Filtros em uma área única e mais objetiva.
+- Resumo do filtro com etiquetas: tipo, período, ACS e pesquisa.
+- Botão Imprimir relatório agora gera um documento limpo, somente com os dados filtrados, indicadores e tabela, sem imprimir a tela inteira.
+- Impressão inclui cabeçalho, período, usuário, perfil, aviso do Eliel e versão do sistema.
+- Versionamento atualizado para v12.0.0-20260713.
