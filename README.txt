@@ -118,3 +118,5 @@ Em Relatórios há etapas visuais: escolha o modelo, ajuste filtros e adicione A
 A navegação mobile fica acessível na barra inferior. O Firestore, os IDs e as regras continuam compatíveis.
 
 V14.1 — Lançamentos: seleção de mês, opção de ver o ano inteiro, status por competência e salvamento apenas dos meses alterados (não gera documentos vazios nos demais meses). Campos cidadãos e visitas continuam obrigatórios para qualquer mês alterado.
+
+Build PWA v14.1.0-20261105: atualização de cache e assets CSS/JS para publicação do novo seletor mensal.

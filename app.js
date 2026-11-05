@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v14.0.0-20261105";
+const APP_VERSION = "v14.1.0-20261105";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
