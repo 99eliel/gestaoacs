@@ -807,6 +807,34 @@ function populateReportAcsOptions() {
 }
 
 
+function applyReportPeriodPreset(preset) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  if (preset === "clear") {
+    els.reportYearSelect.value = String(year);
+    els.reportStartMonth.value = String(month);
+    els.reportEndMonth.value = String(month);
+    els.reportAcsSelect.value = "";
+    els.reportSearch.value = "";
+    showMessage(els.reportMessage, "Filtros redefinidos. A seleção acumulada, se houver, foi mantida.");
+    return;
+  }
+  if (preset === "current") {
+    els.reportYearSelect.value = String(year);
+    els.reportStartMonth.value = String(month);
+    els.reportEndMonth.value = String(month);
+  } else if (preset === "last3") {
+    els.reportYearSelect.value = String(year);
+    els.reportStartMonth.value = String(Math.max(1, month - 2));
+    els.reportEndMonth.value = String(month);
+    if (month < 3) showMessage(els.reportMessage, "Este atalho mostra os meses disponíveis no ano atual. Para adicionar meses do ano anterior, use a seleção personalizada.");
+  } else if (preset === "fullYear") {
+    els.reportStartMonth.value = "1";
+    els.reportEndMonth.value = "12";
+  }
+}
+
 function getReportTypeMeta(type) {
   const meta = {
     period_all: {
