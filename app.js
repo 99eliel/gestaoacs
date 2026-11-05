@@ -62,6 +62,8 @@ let reportsRenderedRows = [];
 let reportSelection = []; // pares únicos de ACS + competência (ano/mês)
 let reportsDataReady = false;
 let activeScreen = "enfermeira";
+let activeLaunchMonth = new Date().getMonth()+1;
+let showAllLaunchMonths = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -615,6 +617,8 @@ function renderAcsList() {
 }
 
 async function selectAcs(acs) {
+  activeLaunchMonth = currentMonthNumber();
+  showAllLaunchMonths = false;
   selectedAcs = acs;
   openTab("lancamentos");
   populateLaunchAcsOptions();
@@ -694,6 +698,8 @@ function montarCamposMensais(visitasPorMes) {
     const box = document.createElement("div");
     box.className = "month-box";
     box.dataset.monthBox = String(mesNumero);
+    box.dataset.dirty = "0";
+    box.dataset.saved = (pessoasAtual>0 || quantidadeAtual>0) ? "1" : "0";
     box.innerHTML = `
       <label>${mesNome}</label>
       <div class="month-fields">
@@ -735,10 +741,16 @@ function montarCamposMensais(visitasPorMes) {
       badge.querySelector("strong").textContent = `${percentual}%`;
     };
 
-    box.querySelectorAll("input").forEach((input) => input.addEventListener("input", atualizarCobertura));
+    box.querySelectorAll("input").forEach((input) => input.addEventListener("input", () => {
+      box.dataset.dirty = "1";
+      atualizarCobertura();
+      renderLaunchMonthNav();
+    }));
 
     els.monthsGrid.appendChild(box);
   });
+
+  renderLaunchMonthNav();
 
   if (!els.monthsGrid.children.length) {
     els.monthsGrid.innerHTML = `<div class="empty-box">Não foi possível montar os campos. Atualize o sistema e tente novamente.</div>`;
@@ -753,61 +765,105 @@ function calcularPercentual(visitas, pessoas) {
   return Math.round((totalVisitas / totalPessoas) * 100);
 }
 
+
+function renderLaunchMonthNav() {
+  const bar = $("launch-month-navigation");
+  if (!bar || !els.monthsGrid) return;
+  const boxes = [...els.monthsGrid.querySelectorAll(".month-box")];
+  bar.innerHTML = meses.map((nome,index) => {
+    const numero=index+1;
+    const box=boxes.find(node=>Number(node.dataset.monthBox)===numero);
+    const filled=box?.dataset.saved==="1";
+    const dirty=box?.dataset.dirty==="1";
+    return `<button type="button" class="launch-month-btn ${activeLaunchMonth===numero?"active":""} ${filled?"filled":""}" data-launch-month="${numero}" aria-pressed="${activeLaunchMonth===numero}">
+      <strong>${nome.slice(0,3)}</strong><span>${dirty?"●":filled?"✓":"–"}</span>
+    </button>`;
+  }).join("");
+  bar.querySelectorAll("[data-launch-month]").forEach(btn=>btn.addEventListener("click",()=>{
+    activeLaunchMonth=Number(btn.dataset.launchMonth);
+    showAllLaunchMonths=false;
+    applyLaunchMonthVisibility();
+  }));
+  applyLaunchMonthVisibility();
+}
+
+function applyLaunchMonthVisibility() {
+  const boxes=els.monthsGrid?.querySelectorAll(".month-box")||[];
+  boxes.forEach(box=>{
+    box.classList.toggle("hidden-month",!showAllLaunchMonths && Number(box.dataset.monthBox)!==activeLaunchMonth);
+  });
+  $("launch-month-navigation")?.querySelectorAll("[data-launch-month]").forEach(btn=>{
+    const active=Number(btn.dataset.launchMonth)===activeLaunchMonth;
+    btn.classList.toggle("active",active);
+    btn.setAttribute("aria-pressed",active?"true":"false");
+  });
+  const toggle=$("btn-toggle-launch-year");
+  if(toggle)toggle.textContent=showAllLaunchMonths?"Ver um mês por vez":"Ver ano inteiro";
+}
+
 async function saveVisits() {
   if (!selectedAcs) return;
-
-  const ano = Number(els.yearSelect.value);
-  const monthBoxes = Array.from(els.monthsGrid.querySelectorAll(".month-box"));
-
-  if (!monthBoxes.length) {
-    showMessage(els.visitsMessage, "Os campos de lançamento ainda não carregaram. Toque novamente em Abrir lançamento de visitas.", true);
+  const ano=Number(els.yearSelect.value);
+  const boxes=[...els.monthsGrid.querySelectorAll('.month-box')];
+  if (!boxes.length) {
+    showMessage(els.visitsMessage,"Os campos ainda não carregaram. Selecione novamente o ACS.",true);
     return;
   }
-
-  try {
-    showMessage(els.visitsMessage, "Salvando...");
-
-    for (const box of monthBoxes) {
-      const pessoasInput = box.querySelector('input[data-field="pessoas"]');
-      const visitasInput = box.querySelector('input[data-field="visitas"]');
-      const mes = Number(pessoasInput.dataset.month);
-      const pessoasCadastradas = Number(pessoasInput.value || 0);
-      const quantidade = Number(visitasInput.value || 0);
-      const coberturaPercentual = calcularPercentual(quantidade, pessoasCadastradas);
-
-      if (!Number.isInteger(pessoasCadastradas) || !Number.isInteger(quantidade) || pessoasCadastradas < 0 || quantidade < 0) {
-        showMessage(els.visitsMessage, "Use apenas números inteiros e positivos nos lançamentos.", true);
-        return;
-      }
-
-      if (quantidade > 0 && pessoasCadastradas <= 0) {
-        showMessage(els.visitsMessage, "Quando houver visitas no mês, informe também o total de cidadãos cadastrados daquele mês.", true);
-        return;
-      }
-
-      const visitId = `${selectedAcs.id}_${ano}_${mes}`;
-      await setDoc(doc(db, "visitas", visitId), {
-        acsId: selectedAcs.id,
-        nomeAcs: selectedAcs.nome,
-        enfermeiraId: selectedAcs.enfermeiraId,
-        nomeEnfermeira: selectedAcs.enfermeiraNome,
-        posto: selectedAcs.posto,
-        pessoasCadastradas,
-        coberturaPercentual,
-        ano,
-        mes,
-        quantidade,
-        atualizadoEm: serverTimestamp(),
-        atualizadoPor: currentUser.uid,
-        atualizadoPorEmail: currentUser.email || "",
-        atualizadoPorNome: currentProfile.nome || currentUser.email || ""
-      }, { merge: true });
+  const changed=boxes.filter(box=>box.dataset.dirty==="1");
+  if(!changed.length){
+    showMessage(els.visitsMessage,"Nenhuma alteração pendente. Preencha ou corrija os dados de um mês antes de salvar.");
+    return;
+  }
+  const rows=[];
+  for(const box of changed){
+    const pessoa=box.querySelector('input[data-field="pessoas"]');
+    const visita=box.querySelector('input[data-field="visitas"]');
+    const mes=Number(box.dataset.monthBox);
+    if (pessoa.value.trim()==="" || visita.value.trim()===""){
+      showMessage(els.visitsMessage,`Informe cidadãos e visitas de ${monthName(mes)}, mesmo quando o valor for zero.`,true);
+      return;
     }
-
-    showMessage(els.visitsMessage, "Lançamentos salvos/atualizados com sucesso!");
+    const pessoasCadastradas=Number(pessoa.value),quantidade=Number(visita.value);
+    if(!Number.isInteger(pessoasCadastradas)||!Number.isInteger(quantidade)||pessoasCadastradas<0||quantidade<0){
+      showMessage(els.visitsMessage,`Use apenas números inteiros não negativos em ${monthName(mes)}.`,true);
+      return;
+    }
+    if(quantidade>0 && pessoasCadastradas===0){
+      showMessage(els.visitsMessage,`Informe os cidadãos cadastrados em ${monthName(mes)}.`,true);
+      return;
+    }
+    rows.push({box,mes,pessoasCadastradas,quantidade});
+  }
+  const btn=$("btn-save-visits");
+  btn.disabled=true;
+  try {
+    showMessage(els.visitsMessage,`Salvando ${rows.length} mês(es)...`);
+    for(const row of rows){
+      await setDoc(doc(db,"visitas",`${selectedAcs.id}_${ano}_${row.mes}`),{
+        acsId:selectedAcs.id,
+        nomeAcs:selectedAcs.nome,
+        enfermeiraId:selectedAcs.enfermeiraId,
+        nomeEnfermeira:selectedAcs.enfermeiraNome,
+        posto:selectedAcs.posto,
+        pessoasCadastradas:row.pessoasCadastradas,
+        coberturaPercentual:calcularPercentual(row.quantidade,row.pessoasCadastradas),
+        ano,mes:row.mes,quantidade:row.quantidade,
+        atualizadoEm:serverTimestamp(),
+        atualizadoPor:currentUser.uid,
+        atualizadoPorEmail:currentUser.email||"",
+        atualizadoPorNome:currentProfile.nome||currentUser.email||""
+      },{merge:true});
+      row.box.dataset.dirty="0";
+      row.box.dataset.saved="1";
+    }
+    renderLaunchMonthNav();
+    showMessage(els.visitsMessage,`${rows.length} mês(es) salvo(s) com sucesso! Os demais meses não foram alterados.`);
     loadCurrentMonthTotal();
-  } catch (error) {
-    showMessage(els.visitsMessage, traduzErroFirebase(error), true);
+  } catch(error){
+    renderLaunchMonthNav();
+    showMessage(els.visitsMessage,`Falha ao salvar: ${traduzErroFirebase(error)}. Confira os meses marcados antes de tentar novamente.`,true);
+  } finally {
+    btn.disabled=false;
   }
 }
 
@@ -1353,6 +1409,9 @@ function highlightMonthForEditing(mes) {
 
   els.monthsGrid.querySelectorAll(".editing-month").forEach((box) => box.classList.remove("editing-month"));
   monthBox.classList.add("editing-month");
+  activeLaunchMonth=Number(mes);
+  showAllLaunchMonths=false;
+  applyLaunchMonthVisibility();
   monthBox.scrollIntoView({ behavior: "smooth", block: "center" });
 
   const visitasInput = monthBox.querySelector('input[data-field="visitas"]');
@@ -1806,6 +1865,10 @@ function bindEvents() {
   $("btn-logout").addEventListener("click", () => signOut(auth));
   $("btn-add-acs").addEventListener("click", addAcs);
   $("btn-save-visits").addEventListener("click", saveVisits);
+  $("btn-toggle-launch-year").addEventListener("click",()=>{
+    showAllLaunchMonths=!showAllLaunchMonths;
+    applyLaunchMonthVisibility();
+  });
   $("btn-add-admin").addEventListener("click", addAdminManual);
   $("btn-export-csv").addEventListener("click", exportCsv);
   $("btn-run-report").addEventListener("click", showReportResult);
@@ -1840,7 +1903,6 @@ function bindEvents() {
     button.addEventListener("click", () => {
       applyReportPeriodPreset(button.dataset.periodPreset);
       updateReportHelp();
-      renderReports();
     });
   });
   if (els.installButton) els.installButton.addEventListener("click", installApp);

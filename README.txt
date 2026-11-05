@@ -116,3 +116,5 @@ Agora o aplicativo possui telas independentes: Início, Agentes ACS, Lançamento
 Em Lançamentos, escolha o ACS no seletor superior. Clicar em Abrir lançamento a partir da lista de ACS também abre a tela correta.
 Em Relatórios há etapas visuais: escolha o modelo, ajuste filtros e adicione ACS/meses personalizados, então clique em Gerar e visualizar. O resultado, exportação e impressão/PDF ficam em uma segunda visualização com botão Voltar aos filtros.
 A navegação mobile fica acessível na barra inferior. O Firestore, os IDs e as regras continuam compatíveis.
+
+V14.1 — Lançamentos: seleção de mês, opção de ver o ano inteiro, status por competência e salvamento apenas dos meses alterados (não gera documentos vazios nos demais meses). Campos cidadãos e visitas continuam obrigatórios para qualquer mês alterado.

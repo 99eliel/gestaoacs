@@ -2100,3 +2100,29 @@ body { background:#f6f8fa; }
   .report-result-toolbar { flex-direction:column; align-items:stretch; }
   .report-result-toolbar .result-actions { display:grid; grid-template-columns:1fr 1fr; }
 }
+
+/* V14.1 — lançamentos por mês com salvamento somente dos campos alterados */
+.month-browser-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:19px 0 12px; }
+.month-browser-header strong { display:block; font-size:15px; color:#20554d; }
+.month-browser-header small { display:block; color:#7b8d8d; font-size:12px; margin-top:4px; }
+.launch-month-navigation { display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); gap:6px; margin-bottom:16px; }
+.launch-month-btn { background:#f8fbfa; border:1px solid #e1eeea; color:#768886; border-radius:10px; min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; }
+.launch-month-btn strong { font-size:12px; }
+.launch-month-btn span { font-size:12px; line-height:1; color:#9baaa8; }
+.launch-month-btn.filled span { color:#188274; }
+.launch-month-btn.active { border:2px solid #188777; color:#05675c; background:#eaf9f5; }
+.launch-month-btn.active span { color:#05675c; }
+#lancamentos-panel .month-box.hidden-month { display:none!important; }
+#lancamentos-panel .months-grid { grid-template-columns:1fr; }
+#lancamentos-panel .month-box { max-width:none; padding:24px; grid-template-columns:minmax(100px,.5fr) minmax(0,2fr) minmax(130px,.6fr); }
+#lancamentos-panel .month-box > label { font-size:17px; }
+#lancamentos-panel .month-box .month-fields { display:grid; grid-template-columns:1fr 1fr; gap:15px; }
+#lancamentos-panel .big-save:disabled { opacity:.6; cursor:wait; }
+@media(max-width:1050px) {
+  .launch-month-navigation { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  #lancamentos-panel .month-box { grid-template-columns:1fr; gap:10px; padding:17px; }
+}
+@media(max-width:520px) {
+  .launch-month-navigation { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  #lancamentos-panel .month-box .month-fields { grid-template-columns:1fr; }
+}
