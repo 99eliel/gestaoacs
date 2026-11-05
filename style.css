@@ -1894,3 +1894,33 @@ tr:last-child td {
     border-radius: 14px;
   }
 }
+
+/* V13 - Emissão clara e composição acumulativa de competências */
+.report-page-grid-v13 { grid-template-columns: minmax(250px,330px) minmax(0,1fr); gap: 16px; }
+.new-report-hero { padding: 24px; }
+.report-page-grid-v13 .report-type-option { border-radius: 14px; padding: 13px; align-items: center; }
+.report-page-grid-v13 .report-type-option strong { margin-bottom: 3px; }
+.report-page-grid-v13 .report-filter-card { min-width: 0; }
+.report-page-grid-v13 .report-controls { grid-template-columns: repeat(2,minmax(0,1fr)); margin-bottom: 16px; }
+.report-page-grid-v13 .report-field-year { order: 1; }
+.report-page-grid-v13 .report-field-acs { order: 2; }
+.report-page-grid-v13 .report-field-start { order: 3; }
+.report-page-grid-v13 .report-field-end { order: 4; }
+.report-page-grid-v13 .report-search-field { order: 5; }
+.report-page-grid-v13 .field-hidden { display:none!important; }
+.report-selection-card { border: 1px solid #b4d9d4; border-radius: 16px; background: #f3fbf9; padding: 15px; margin: 12px 0 16px; }
+.report-selection-card.hidden { display:none!important; }
+.selection-guidance { font-size: 13px; color: #245f5b; line-height: 1.55; margin-bottom: 11px; }
+.selection-add-btn { width: 100%; justify-content: center; }
+.selection-header { display:flex; gap:10px; justify-content:space-between; align-items:center; margin:16px 0 9px; flex-wrap:wrap; }
+.selection-header strong { color:#164e48; font-size:15px; }
+.selection-header span { font-size:12px; font-weight:700; color:#64748b; }
+.selection-items { display:flex; flex-wrap:wrap; gap:8px; max-height:250px; overflow-y:auto; padding:4px 0; }
+.selection-empty { font-size:13px; line-height:1.5; margin:3px 0; }
+.selection-chip { display:inline-flex; align-items:center; gap:8px; background:#fff; border:1px solid #c7e4df; border-radius:12px; padding:6px 6px 6px 11px; color:#164e48; font-size:13px; font-weight:700; }
+.selection-chip button { background:#eaf5f2; border:0; border-radius:9px; cursor:pointer; color:#b91c1c; font-size:20px; width:28px; height:27px; line-height:1; }
+.selection-chip button:hover { background:#fee2e2; }
+.selection-clear-btn { border:none; padding:8px 2px; margin-top:10px; background:none; color:#be123c; font-size:13px; font-weight:700; cursor:pointer; }
+.report-selection-card .primary-btn { min-height:43px; }
+@media(max-width:1180px) { .report-page-grid-v13 { grid-template-columns:1fr; } .report-page-grid-v13 .simple-report-options { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:720px) { .report-page-grid-v13 .simple-report-options,.report-page-grid-v13 .report-controls { grid-template-columns:1fr; } .new-report-hero { padding:17px; } .report-actions { gap:7px; } .report-actions button { flex:1 1 100%; } }

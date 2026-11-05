@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v12.0.0-20260713";
+const APP_VERSION = "v13.0.0-20261105";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
@@ -59,6 +59,7 @@ let unsubscribeAcs = null;
 let adminReportData = [];
 let reportsRawData = [];
 let reportsRenderedRows = [];
+let reportSelection = []; // pares únicos de ACS + competência (ano/mês)
 
 const $ = (id) => document.getElementById(id);
 
@@ -805,65 +806,45 @@ function populateReportAcsOptions() {
   }
 }
 
+
 function getReportTypeMeta(type) {
   const meta = {
-    monthly_all: {
-      label: "Mensal da equipe",
-      help: "Mostra todos os ACS no mês selecionado. Ideal para fechar a produção mensal do posto.",
-      startLabel: "Mês",
-      showEnd: false,
-      acsRequired: false,
-      acsOptional: true,
-      periodText: "um único mês"
-    },
     period_all: {
-      label: "Período da equipe",
-      help: "Mostra todos os lançamentos entre o mês inicial e final. Exemplo: janeiro a março de toda a equipe.",
+      label: "Relatório da equipe",
+      help: "Escolha o ano e um ou vários meses. Mostra todos os ACS disponíveis para seu perfil.",
       startLabel: "Mês inicial",
       showEnd: true,
       acsRequired: false,
-      acsOptional: true,
-      periodText: "um período"
+      acsOptional: false
     },
-    period_acs: {
-      label: "ACS específico por período",
-      help: "Escolha um ACS e defina o intervalo. Ideal para ver 2, 3 ou mais meses de uma pessoa específica.",
+    custom: {
+      label: "Seleção personalizada",
+      help: "Selecione um ACS, escolha o ano e os meses e clique em Adicionar. Repita quantas vezes precisar: a seleção será acumulada.",
       startLabel: "Mês inicial",
       showEnd: true,
       acsRequired: true,
-      acsOptional: false,
-      periodText: "um período de um ACS"
-    },
-    annual_acs: {
-      label: "Ano completo de um ACS",
-      help: "Escolha um ACS. O sistema mostra janeiro a dezembro do ano escolhido.",
-      startLabel: "Janeiro a dezembro",
-      showEnd: false,
-      acsRequired: true,
-      acsOptional: false,
-      periodText: "o ano completo"
+      acsOptional: false
     },
     ranking_coverage: {
       label: "Ranking de cobertura",
-      help: "Agrupa o período escolhido e ordena os ACS pela maior cobertura.",
+      help: "Compara a proporção de visitas por ACS no período escolhido.",
       startLabel: "Mês inicial",
       showEnd: true,
       acsRequired: false,
-      acsOptional: true,
-      periodText: "ranking do período"
+      acsOptional: false
     },
     consolidated: {
-      label: "Consolidado por posto/enfermeira",
-      help: "Agrupa visitas, cidadãos e cobertura por posto e enfermeira. Para admin, compara as unidades; para enfermeira, consolida o próprio posto.",
+      label: "Consolidado por unidade",
+      help: "Soma os lançamentos por posto e enfermeira no período.",
       startLabel: "Mês inicial",
       showEnd: true,
       acsRequired: false,
-      acsOptional: false,
-      periodText: "consolidado do período"
+      acsOptional: false
     }
   };
-  return meta[type] || meta.monthly_all;
+  return meta[type] || meta.period_all;
 }
+
 
 function updateReportTemplateCards(type) {
   document.querySelectorAll("[data-report-template]").forEach((button) => {
@@ -880,73 +861,105 @@ function toggleReportField(field, visible) {
   if (control) control.disabled = !visible;
 }
 
+
+function reportSelectionLabel(item) {
+  const acs = acsCache.find(a => a.id === item.acsId);
+  const fromData = reportsRawData.find(row => row.acsId === item.acsId);
+  const nome = acs?.nome || fromData?.nomeAcs || "ACS";
+  return `${nome} — ${monthName(item.mes)}/${item.ano}`;
+}
+
+function reportPeriodText(config) {
+  if (config.type !== "custom") return periodoLabel(config.inicio, config.fim, config.ano);
+  if (!reportSelection.length) return "Seleção ainda vazia";
+  const dates = [...new Set(reportSelection.map(item => `${item.ano}-${String(item.mes).padStart(2, "0")}`))].sort();
+  const first = dates[0].split("-");
+  const last = dates[dates.length - 1].split("-");
+  if (dates.length === 1) return `${monthName(Number(first[1]))} de ${first[0]}`;
+  return `${monthName(Number(first[1]))}/${first[0]} a ${monthName(Number(last[1]))}/${last[0]} • ${dates.length} competência(s)`;
+}
+
+function renderReportSelection() {
+  const holder = $("report-selection-items");
+  const count = $("report-selection-count");
+  if (!holder) return;
+  if (count) count.textContent = `${reportSelection.length} lançamento(s) selecionado(s)`;
+  if (!reportSelection.length) {
+    holder.innerHTML = '<p class="muted selection-empty">Sua seleção está vazia. Escolha um ACS e um mês ou intervalo acima, depois clique em Adicionar.</p>';
+    return;
+  }
+  const ordered = [...reportSelection].sort((a,b) =>
+    String(acsCache.find(x=>x.id===a.acsId)?.nome||"").localeCompare(String(acsCache.find(x=>x.id===b.acsId)?.nome||"")) ||
+    a.ano-b.ano || a.mes-b.mes
+  );
+  holder.innerHTML = ordered.map(item => `
+    <span class="selection-chip">
+      <span>${escapeHtml(reportSelectionLabel(item))}</span>
+      <button type="button" data-remove-report-row="1" data-acs="${escapeHtml(item.acsId)}" data-ano="${item.ano}" data-mes="${item.mes}" aria-label="Remover ${escapeHtml(reportSelectionLabel(item))}" title="Remover da seleção">×</button>
+    </span>
+  `).join("");
+}
+
+function addToReportSelection() {
+  if (els.reportType.value !== "custom") return;
+  const acsId = els.reportAcsSelect.value;
+  const ano = Number(els.reportYearSelect.value);
+  const first = Number(els.reportStartMonth.value);
+  const last = Number(els.reportEndMonth.value);
+  if (!acsId || !acsCache.some(item => item.id === acsId)) {
+    showMessage(els.reportMessage, "Selecione um ACS válido antes de adicionar.", true);
+    return;
+  }
+  if (!Number.isInteger(ano) || !Number.isInteger(first) || !Number.isInteger(last) || first<1 || last>12) {
+    showMessage(els.reportMessage, "Informe um ano e meses válidos.", true);
+    return;
+  }
+  const inicio = Math.min(first,last), fim = Math.max(first,last);
+  let added=0;
+  for (let mes=inicio; mes<=fim; mes++) {
+    if (!reportSelection.some(item => item.acsId===acsId && item.ano===ano && item.mes===mes)) {
+      reportSelection.push({acsId,ano,mes});
+      added++;
+    }
+  }
+  renderReportSelection();
+  showMessage(els.reportMessage, added ? `${added} competência(s) adicionada(s) ao relatório.` : "Esses meses desse ACS já estão na seleção.");
+  renderReports();
+}
+
 function updateReportPreview() {
   if (!els.reportPreview || !els.reportType) return;
-  const config = getReportConfig();
-  const meta = getReportTypeMeta(config.type);
-  const acsText = config.acsId
-    ? (acsCache.find((item) => item.id === config.acsId)?.nome || "ACS selecionado")
-    : (meta.acsRequired ? "selecione um ACS" : "todos os ACS");
-  const pesquisaText = config.search ? `Pesquisa: “${escapeHtml(config.search)}”` : "Sem pesquisa adicional";
-
+  const config=getReportConfig(), meta=getReportTypeMeta(config.type);
+  const name = config.type==="custom" ? `${reportSelection.length} lançamento(s) escolhidos` : "Todos os ACS disponíveis";
   els.reportPreview.innerHTML = `
-    <strong>Relatório selecionado</strong>
+    <strong>O que será apresentado</strong>
     <div class="preview-tags">
-      <span><b>Tipo:</b> ${escapeHtml(meta.label)}</span>
-      <span><b>Período:</b> ${escapeHtml(periodoLabel(config.inicio, config.fim, config.ano))}</span>
-      <span><b>ACS:</b> ${escapeHtml(acsText)}</span>
-      <span><b>Filtro:</b> ${pesquisaText}</span>
+      <span><b>Modelo:</b> ${escapeHtml(meta.label)}</span>
+      <span><b>Período:</b> ${escapeHtml(reportPeriodText(config))}</span>
+      <span><b>Seleção:</b> ${escapeHtml(name)}</span>
     </div>
   `;
 }
 
 function updateReportHelp() {
   if (!els.reportHelp || !els.reportType) return;
-  const type = els.reportType.value;
-  const meta = getReportTypeMeta(type);
-
-  els.reportHelp.textContent = meta.help;
+  const type=els.reportType.value;
+  const meta=getReportTypeMeta(type);
+  const custom=type==="custom";
+  els.reportHelp.textContent=meta.help;
   updateReportTemplateCards(type);
-
-  const startField = els.reportStartMonth?.closest(".field-group");
-  const endField = els.reportEndMonth?.closest(".field-group");
-  const acsField = els.reportAcsSelect?.closest(".field-group");
-
-  if (els.reportStartLabel) els.reportStartLabel.textContent = meta.startLabel;
-
-  if (type === "monthly_all") {
-    els.reportEndMonth.value = els.reportStartMonth.value;
-  }
-
-  if (type === "annual_acs") {
-    els.reportStartMonth.value = "1";
-    els.reportEndMonth.value = "12";
-  }
-
-  toggleReportField(startField, type !== "annual_acs");
-  toggleReportField(endField, meta.showEnd);
-  toggleReportField(acsField, meta.acsRequired || meta.acsOptional);
-
-  if (!meta.acsRequired && !meta.acsOptional && els.reportAcsSelect) {
-    els.reportAcsSelect.value = "";
-  }
-
-  if (acsField) {
-    acsField.classList.toggle("required-filter", meta.acsRequired);
-  }
-
-  if (els.reportAcsHint) {
-    if (meta.acsRequired) {
-      els.reportAcsHint.textContent = "Obrigatório para este relatório.";
-    } else if (meta.acsOptional) {
-      els.reportAcsHint.textContent = "Opcional para filtrar somente um ACS.";
-    } else {
-      els.reportAcsHint.textContent = "Este modelo usa dados consolidados.";
-    }
-  }
-
+  if (els.reportStartLabel) els.reportStartLabel.textContent=meta.startLabel;
+  toggleReportField(els.reportAcsSelect?.closest(".field-group"), custom);
+  const selectionPanel=$("report-selection-card");
+  if (selectionPanel) selectionPanel.classList.toggle("hidden",!custom);
+  const searchField=els.reportSearch?.closest(".field-group");
+  toggleReportField(searchField,!custom);
+  if (custom && els.reportSearch) els.reportSearch.value="";
+  if (els.reportAcsHint) els.reportAcsHint.textContent="Escolha o ACS que deseja acrescentar ao relatório.";
+  renderReportSelection();
   updateReportPreview();
 }
+
 
 async function loadReportsData() {
   if (!currentUser || !currentProfile || !els.reportTableBody) return;
@@ -973,45 +986,39 @@ async function loadReportsData() {
   }
 }
 
+
 function getReportConfig() {
   const type = els.reportType.value;
   const ano = Number(els.reportYearSelect.value);
   let inicio = Number(els.reportStartMonth.value);
   let fim = Number(els.reportEndMonth.value);
-  const acsId = els.reportAcsSelect.value;
-  const search = normalizeText(els.reportSearch.value).toLowerCase();
-
-  if (type === "monthly_all") fim = inicio;
-  if (type === "annual_acs") {
-    inicio = 1;
-    fim = 12;
-  }
-
+  const acsId = type === "custom" ? "" : els.reportAcsSelect.value;
+  const search = type === "custom" ? "" : normalizeText(els.reportSearch.value).toLowerCase();
   if (inicio > fim) [inicio, fim] = [fim, inicio];
-
-  return { type, ano, inicio, fim, acsId, search };
+  return {type,ano,inicio,fim,acsId,search};
 }
 
 function getFilteredReportVisits(config) {
-  const needsAcs = config.type === "period_acs" || config.type === "annual_acs";
-  if (needsAcs && !config.acsId) {
-    showMessage(els.reportMessage, "Escolha um ACS para esse tipo de relatório.", true);
-    return [];
+  if (config.type === "custom") {
+    if (!reportSelection.length) return [];
+    const allowed = new Set(reportSelection.map(item => `${item.acsId}|${item.ano}|${item.mes}`));
+    return reportsRawData.filter(item =>
+      allowed.has(`${item.acsId}|${Number(item.ano)}|${Number(item.mes)}`) &&
+      (Number(item.quantidade||0)>0 || Number(item.pessoasCadastradas||0)>0)
+    );
   }
-
-  showMessage(els.reportMessage, "");
-
   return reportsRawData
-    .filter((item) => Number(item.ano) === config.ano)
-    .filter((item) => Number(item.mes) >= config.inicio && Number(item.mes) <= config.fim)
-    .filter((item) => !config.acsId || item.acsId === config.acsId)
-    .filter((item) => Number(item.quantidade || 0) > 0 || Number(item.pessoasCadastradas || 0) > 0)
-    .filter((item) => {
+    .filter(item => Number(item.ano)===config.ano)
+    .filter(item => Number(item.mes)>=config.inicio && Number(item.mes)<=config.fim)
+    .filter(item => !config.acsId || item.acsId === config.acsId)
+    .filter(item => Number(item.quantidade||0)>0 || Number(item.pessoasCadastradas||0)>0)
+    .filter(item => {
       if (!config.search) return true;
-      const text = `${item.posto || ""} ${item.nomeEnfermeira || ""} ${item.nomeAcs || ""} ${getAcsMicroarea(item.acsId)}`.toLowerCase();
-      return text.includes(config.search);
+      const haystack=`${item.posto||""} ${item.nomeEnfermeira||""} ${item.nomeAcs||""} ${getAcsMicroarea(item.acsId)}`.toLowerCase();
+      return haystack.includes(config.search);
     });
 }
+
 
 function getAcsMicroarea(acsId) {
   const acs = acsCache.find((item) => item.id === acsId);
@@ -1060,7 +1067,7 @@ function buildReportRows(visits, config) {
       visits,
       (item) => item.acsId,
       (row, item) => {
-        row.periodo = periodoLabel(config.inicio, config.fim, config.ano);
+        row.periodo = reportPeriodText(config);
         row.posto = item.posto || "-";
         row.nomeEnfermeira = item.nomeEnfermeira || "-";
         row.nomeAcs = item.nomeAcs || "-";
@@ -1105,17 +1112,16 @@ function buildReportRows(visits, config) {
     .sort((a, b) => String(a.posto).localeCompare(String(b.posto)) || String(a.nomeAcs).localeCompare(String(b.nomeAcs)) || Number(a.mes) - Number(b.mes));
 }
 
+
 function reportTypeTitle(type) {
-  const titles = {
-    monthly_all: "Relatório mensal da equipe",
-    period_all: "Relatório por período da equipe",
-    period_acs: "Relatório de ACS específico por período",
-    annual_acs: "Relatório anual de ACS específico",
-    ranking_coverage: "Ranking de cobertura dos ACS",
-    consolidated: "Relatório consolidado por posto/enfermeira"
-  };
-  return titles[type] || "Relatório";
+  return ({
+    period_all:"Relatório da equipe",
+    custom:"Relatório personalizado de ACS",
+    ranking_coverage:"Ranking de cobertura",
+    consolidated:"Consolidado por posto e enfermeira"
+  })[type] || "Relatório de visitas ACS";
 }
+
 
 function renderReports() {
   if (!els.reportTableBody) return;
@@ -1135,7 +1141,7 @@ function renderReports() {
   els.reportCoverage.textContent = `${coberturaGeral}%`;
   els.reportTotalAcs.textContent = acsUnicos.size;
   els.reportTitle.textContent = reportTypeTitle(config.type);
-  els.reportSubtitle.textContent = `${periodoLabel(config.inicio, config.fim, config.ano)} • ${currentProfile.tipo === "admin" ? "Todos os postos conforme filtros" : `Posto ${currentProfile.posto}`}`;
+  els.reportSubtitle.textContent = `${reportPeriodText(config)} • ${currentProfile.tipo === "admin" ? "Postos conforme seleção" : `Posto ${currentProfile.posto}`}`;
 
   renderReportTable(reportsRenderedRows);
   renderReportInsights(reportsRenderedRows, visits, config, totalVisitas, totalCidadaos, coberturaGeral);
@@ -1178,11 +1184,11 @@ function renderReportInsights(rows, visits, config, totalVisitas, totalCidadaos,
   const menor = [...rows].sort((a, b) => Number(a.coberturaPercentual || 0) - Number(b.coberturaPercentual || 0))[0];
   const totalRegistros = visits.length;
 
-  els.reportSummaryText.textContent = `${reportTypeTitle(config.type)} — ${periodoLabel(config.inicio, config.fim, config.ano)}.`;
+  els.reportSummaryText.textContent = `${reportTypeTitle(config.type)} — ${reportPeriodText(config)}.`;
   els.reportHighlights.innerHTML = `
     <div class="highlight-line"><span>Registros considerados</span><strong>${totalRegistros}</strong></div>
     <div class="highlight-line"><span>Visitas no filtro</span><strong>${totalVisitas}</strong></div>
-    <div class="highlight-line"><span>Cidadãos no filtro</span><strong>${totalCidadaos}</strong></div>
+    <div class="highlight-line"><span>Cidadãos somados por mês</span><strong>${totalCidadaos}</strong></div>
     <div class="highlight-line"><span>Cobertura geral</span><strong>${coberturaGeral}%</strong></div>
     <div class="highlight-line"><span>Maior cobertura</span><strong>${escapeHtml(maior.nomeAcs)} • ${Number(maior.coberturaPercentual || 0)}%</strong></div>
     <div class="highlight-line"><span>Menor cobertura</span><strong>${escapeHtml(menor.nomeAcs)} • ${Number(menor.coberturaPercentual || 0)}%</strong></div>
@@ -1345,7 +1351,8 @@ function buildPrintReportHtml() {
   const acsUnicos = new Set(reportsRenderedRows.map((item) => item.acsId || item.nomeAcs).filter(Boolean));
   const unidade = currentProfile?.tipo === "admin" ? "Todos os postos conforme filtros" : `Posto ${currentProfile?.posto || "-"}`;
   const geradoEm = new Date().toLocaleString("pt-BR");
-  const subtitulo = `${periodoLabel(config.inicio, config.fim, config.ano)} • ${unidade}`;
+  const subtitulo = `${reportPeriodText(config)} • ${unidade}`;
+  const selecaoImpressa = config.type === "custom" ? reportSelection.map(reportSelectionLabel).join("; ") : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1409,9 +1416,11 @@ function buildPrintReportHtml() {
     <section class="filter-box">
       <b>Filtros aplicados:</b>
       Tipo: ${escapeHtml(reportTypeTitle(config.type))} •
-      Período: ${escapeHtml(periodoLabel(config.inicio, config.fim, config.ano))} •
+      Período: ${escapeHtml(reportPeriodText(config))} •
       Unidade: ${escapeHtml(unidade)} •
       Pesquisa: ${config.search ? escapeHtml(config.search) : "sem pesquisa"}
+      ${selecaoImpressa ? `<p><b>ACS e meses incluídos:</b> ${escapeHtml(selecaoImpressa)}</p>` : ""}
+      <p><em>Observação: cidadãos são somados por mês/competência; não representam pessoas únicas ao acumular vários meses.</em></p>
     </section>
 
     <table>
@@ -1704,18 +1713,26 @@ function bindEvents() {
   $("btn-run-report").addEventListener("click", renderReports);
   $("btn-export-report-csv").addEventListener("click", exportReportCsv);
   $("btn-print-report").addEventListener("click", printCurrentReport);
+  $("btn-add-report-selection").addEventListener("click", addToReportSelection);
+  $("btn-clear-report-selection").addEventListener("click", () => {
+    reportSelection=[];
+    renderReportSelection();
+    showMessage(els.reportMessage,"Seleção limpa.");
+    renderReports();
+  });
+  $("report-selection-items").addEventListener("click", event => {
+    const btn=event.target.closest("[data-remove-report-row]");
+    if (!btn) return;
+    reportSelection=reportSelection.filter(item => !(item.acsId===btn.dataset.acs && item.ano===Number(btn.dataset.ano) && item.mes===Number(btn.dataset.mes)));
+    renderReportSelection();
+    renderReports();
+  });
 
   document.querySelectorAll("[data-report-template]").forEach((button) => {
     button.addEventListener("click", () => {
       els.reportType.value = button.dataset.reportTemplate;
       const type = els.reportType.value;
-      if (type === "monthly_all") {
-        els.reportStartMonth.value = String(currentMonthNumber());
-        els.reportEndMonth.value = els.reportStartMonth.value;
-      }
-      if (type === "period_acs" && !els.reportAcsSelect.value) {
-        showMessage(els.reportMessage, "Escolha o ACS para gerar esse relatório.");
-      }
+      showMessage(els.reportMessage, "");
       updateReportHelp();
       renderReports();
     });
@@ -1746,9 +1763,7 @@ function bindEvents() {
     updateReportPreview();
     renderReports();
   });
-  if (els.reportStartMonth) els.reportStartMonth.addEventListener("change", () => {
-    if (els.reportType.value === "monthly_all") els.reportEndMonth.value = els.reportStartMonth.value;
-  });
+
 
   els.tabEnfermeira.addEventListener("click", () => openTab("enfermeira"));
   if (els.tabRelatorios) els.tabRelatorios.addEventListener("click", () => openTab("relatorios"));
@@ -1779,6 +1794,7 @@ onAuthStateChanged(auth, async (user) => {
       currentProfile = null;
       selectedAcs = null;
       acsCache = [];
+      reportSelection = [];
       if (els.emptyLaunchHint) els.emptyLaunchHint.classList.remove("hidden");
       if (unsubscribeAcs) unsubscribeAcs();
       showAuth();
@@ -1786,6 +1802,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     currentProfile = await loadUserProfile(user);
+    reportSelection = [];
     showApp();
 
     els.userInfo.textContent = `${currentProfile.posto} • ${currentProfile.tipo}`;

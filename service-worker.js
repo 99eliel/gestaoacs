@@ -1,4 +1,4 @@
-const APP_VERSION = "v12.0.0-20260713";
+const APP_VERSION = "v13.0.0-20261105";
 const CACHE_NAME = `visitas-acs-${APP_VERSION}`;
 const CACHE_PREFIX = "visitas-acs-";
 

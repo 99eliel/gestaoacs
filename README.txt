@@ -103,3 +103,9 @@ VERSÃO v12.0.0-20260713
 - Botão Imprimir relatório agora gera um documento limpo, somente com os dados filtrados, indicadores e tabela, sem imprimir a tela inteira.
 - Impressão inclui cabeçalho, período, usuário, perfil, aviso do Eliel e versão do sistema.
 - Versionamento atualizado para v12.0.0-20260713.
+
+
+v13 (v13.0.0-20261105) — RELATÓRIOS ACUMULATIVOS
+Na aba Relatórios existem quatro modelos: equipe, seleção personalizada, ranking e consolidado.
+No personalizado, selecione ACS, ano e intervalo de meses e clique em Adicionar ao relatório. Repita para combinar vários ACS ou meses; cada ACS+ano+mês entra apenas uma vez. Retire individualmente no × ou use Limpar seleção.
+O CSV e a impressão incluem somente os lançamentos da seleção. A soma de cidadãos por competência não representa cidadãos únicos ao acumular meses.
