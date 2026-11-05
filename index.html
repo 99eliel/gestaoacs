@@ -4,21 +4,21 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sistema de Controle de Visitas ACS</title>
-  <link rel="stylesheet" href="style.css?v=20261105-v13-selecao-acumulativa" />
-  <link rel="manifest" href="manifest.json?v=20261105-v13-selecao-acumulativa" />
+  <link rel="stylesheet" href="style.css?v=20261105-v14-painel-modular" />
+  <link rel="manifest" href="manifest.json?v=20261105-v14-painel-modular" />
   <meta name="theme-color" content="#04756f" />
   <meta name="description" content="Sistema de Controle de Visitas ACS" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Visitas ACS" />
-  <link rel="apple-touch-icon" href="icon-192.png?v=20261105-v13-selecao-acumulativa" />
+  <link rel="apple-touch-icon" href="icon-192.png?v=20261105-v14-painel-modular" />
 </head>
 <body>
   <div class="developer-banner">
     <div class="developer-text">
       <span class="shield-icon" aria-hidden="true">✓</span>
       <span>Sistema desenvolvido e emprestado por <strong>Eliel do Carmo</strong></span>
-      <small id="app-version" class="app-version">v13</small>
+      <small id="app-version" class="app-version">v14</small>
     </div>
     <div class="banner-actions">
       <button id="btn-install-app" type="button" class="banner-btn install hidden">⬇ Instalar app</button>
@@ -94,7 +94,7 @@
   </main>
 
   <main id="app-area" class="app-shell hidden">
-    <aside class="sidebar">
+    <aside class="sidebar" aria-label="Menu lateral">
       <div class="sidebar-brand">
         <div class="app-logo">✚</div>
         <div>
@@ -112,45 +112,47 @@
       </div>
 
       <nav class="tabs sidebar-menu" aria-label="Navegação principal">
-        <button id="tab-enfermeira" class="tab-btn active" type="button">
-          <span>⌂</span>
-          <strong>Dashboard</strong>
-        </button>
-        <button class="tab-btn ghost" type="button" data-scroll-target="acs-list">
-          <span>👥</span>
-          <strong>ACS</strong>
-        </button>
-        <button class="tab-btn ghost" type="button" data-scroll-target="visitas-card">
-          <span>▦</span>
-          <strong>Lançamentos</strong>
-        </button>
-        <button id="tab-relatorios" class="tab-btn" type="button">
-          <span>▤</span>
-          <strong>Relatórios</strong>
-        </button>
-        <button id="tab-admin" class="tab-btn hidden" type="button">
-          <span>▣</span>
-          <strong>Admin</strong>
-        </button>
-      </nav>
-
+  <div class="nav-group-label">ÁREA DE TRABALHO</div>
+  <button id="tab-enfermeira" class="tab-btn active" type="button" data-nav="enfermeira"><span>⌂</span><strong>Início</strong></button>
+  <button id="tab-acs" class="tab-btn" type="button" data-nav="acs"><span>♙</span><strong>Agentes ACS</strong></button>
+  <button id="tab-lancamentos" class="tab-btn" type="button" data-nav="lancamentos"><span>▦</span><strong>Lançar visitas</strong></button>
+  <button id="tab-relatorios" class="tab-btn" type="button" data-nav="relatorios"><span>▤</span><strong>Relatórios</strong></button>
+  <div class="nav-group-label admin-navigation-label hidden" data-admin-nav>ADMINISTRAÇÃO</div>
+  <button id="tab-gestao" class="tab-btn hidden" type="button" data-nav="gestao" data-admin-nav><span>◫</span><strong>Visão da rede</strong></button>
+  <button id="tab-admin" class="tab-btn hidden" type="button" data-nav="admin" data-admin-nav><span>⚙</span><strong>Administradores</strong></button>
+</nav>
       <div class="quick-tip">
         <strong>Dica rápida</strong>
         <p>Informe a população e as visitas de cada mês. A cobertura será calculada automaticamente.</p>
       </div>
     </aside>
 
-    <section class="content-area">
+    <section class="content-area" id="main-content">
       <header class="topbar">
-        <div>
-          <p class="eyebrow">Painel operacional</p>
-          <h1>Bem-vindo ao Controle de Visitas ACS</h1>
-          <p>Acompanhe indicadores do posto, cadastre ACS e registre a produção mensal da equipe.</p>
+        <div class="topbar-heading">
+          <div class="topbar-overline"><span class="online-dot"></span><span id="topbar-context">PAINEL DE ACOMPANHAMENTO</span></div>
+          <h1 id="topbar-title">Visão geral</h1>
+          <p id="topbar-description">Tudo o que você precisa para acompanhar sua equipe.</p>
         </div>
-        <button id="btn-logout" class="danger-btn">Sair</button>
+        <div class="topbar-actions">
+          <span class="unit-pill" id="topbar-unit">Unidade de saúde</span>
+          <button id="btn-logout" class="danger-btn">Sair</button>
+        </div>
       </header>
 
       <section id="enfermeira-panel" class="panel">
+        <div class="welcome-feature">
+          <div>
+            <span class="feature-overline">BEM-VINDO À SUA ÁREA DE TRABALHO</span>
+            <h2>Acompanhe a equipe com tranquilidade.</h2>
+            <p>Cadastre os agentes, informe o trabalho mensal e gere relatórios. Cada tarefa tem sua própria tela.</p>
+            <div class="feature-actions">
+              <button type="button" class="primary-btn" data-go="lancamentos">＋ Lançar visitas</button>
+              <button type="button" class="feature-light-btn" data-go="relatorios">Ver relatórios</button>
+            </div>
+          </div>
+          <div class="welcome-mark" aria-hidden="true"><span>✚</span><small>GESTÃO ACS</small></div>
+        </div>
         <div class="kpi-grid">
           <article class="kpi-card">
             <div class="kpi-icon">👥</div>
@@ -185,10 +187,32 @@
             </div>
           </article>
         </div>
-
-        <div class="workspace-grid">
-          <div class="left-column">
-            <div class="card form-card">
+        <div class="home-section-title"><div><h2>O que deseja fazer?</h2><p>Escolha uma tarefa para continuar.</p></div></div>
+        <div class="home-actions-grid">
+          <button class="home-action-card" type="button" data-go="acs"><span class="action-icon">♙</span><strong>Gerenciar ACS</strong><small>Cadastre e encontre os agentes da sua equipe.</small><em>Abrir agentes →</em></button>
+          <button class="home-action-card" type="button" data-go="lancamentos"><span class="action-icon action-blue">▦</span><strong>Lançar visitas</strong><small>Preencha cidadãos e visitas de cada mês.</small><em>Abrir lançamentos →</em></button>
+          <button class="home-action-card" type="button" data-go="relatorios"><span class="action-icon action-purple">▤</span><strong>Gerar relatório</strong><small>Compare períodos, ACS e exporte o resultado.</small><em>Criar relatório →</em></button>
+          <button class="home-action-card hidden" type="button" data-go="gestao" data-admin-nav><span class="action-icon">◫</span><strong>Visão da rede</strong><small>Consulte postos e resultados gerais.</small><em>Ver rede →</em></button>
+        </div>
+        <div class="home-hint"><strong>Como funciona</strong><span>1. Cadastre o ACS</span><span>2. Lance os dados de cada mês</span><span>3. Gere e imprima o relatório</span></div>
+      </section>
+      <section id="acs-panel" class="panel hidden">
+        <div class="page-context"><h2>Agentes comunitários de saúde</h2><p>Localize ou cadastre um ACS. Para lançar visitas, clique em <strong>Abrir lançamento</strong> no agente desejado.</p></div>
+        <div class="acs-page-grid">
+          <div class="acs-main-list"><div class="card acs-card">
+              <div class="section-title-row compact">
+                <div>
+                  <h2>Lista de ACS</h2>
+                  <p class="muted list-help">Selecione um ACS para lançar visitas.</p>
+                </div>
+                <span class="soft-badge">Ativos</span>
+              </div>
+              <div class="search-row">
+                <input id="search-acs" type="text" placeholder="Pesquisar ACS..." />
+              </div>
+              <div id="acs-list" class="acs-list empty-box">Nenhum ACS cadastrado ainda.</div>
+            </div></div>
+          <div class="acs-side-form"><div class="card form-card">
               <div class="card-title">
                 <div class="title-icon">＋</div>
                 <div>
@@ -206,25 +230,18 @@
               <div class="info-line">A quantidade de cidadãos cadastrados será informada mês a mês no lançamento.</div>
               <button id="btn-add-acs" class="primary-btn">Salvar ACS</button>
               <p id="acs-message" class="message"></p>
-            </div>
-
-            <div class="card acs-card">
-              <div class="section-title-row compact">
-                <div>
-                  <h2>Lista de ACS</h2>
-                  <p class="muted list-help">Selecione um ACS para lançar visitas.</p>
-                </div>
-                <span class="soft-badge">Ativos</span>
-              </div>
-              <div class="search-row">
-                <input id="search-acs" type="text" placeholder="Pesquisar ACS..." />
-              </div>
-              <div id="acs-list" class="acs-list empty-box">Nenhum ACS cadastrado ainda.</div>
-            </div>
-          </div>
-
-          <div class="right-column">
-            <div id="visitas-card" class="card visits-card hidden">
+            </div></div>
+        </div>
+      </section>
+      <section id="lancamentos-panel" class="panel hidden">
+        <div class="page-context"><h2>Lançamentos mensais</h2><p>Escolha o agente e o ano. Informe a população e as visitas do mês, depois salve os dados.</p></div>
+        <div class="card launch-selector-card">
+          <div class="launch-selector-copy"><span class="step-indicator">1</span><div><strong>Escolha o ACS</strong><small>Os lançamentos existentes serão carregados para edição.</small></div></div>
+          <div class="field-group"><label for="launch-acs-select">Agente comunitário</label><select id="launch-acs-select"><option value="">Selecione um ACS para começar</option></select></div>
+          <button class="secondary-btn" type="button" data-go="acs">Ver todos os ACS</button>
+        </div>
+        <div class="launch-month-selector"><span class="step-indicator">2</span><div><strong>Preencha os meses</strong><small>Os campos ficam disponíveis após escolher um ACS.</small></div></div>
+        <div id="visitas-card" class="card visits-card hidden">
               <div class="section-title-row wrap">
                 <div class="card-title no-margin">
                   <div class="title-icon">▦</div>
@@ -244,36 +261,20 @@
               <button id="btn-save-visits" class="primary-btn big-save">Salvar/atualizar visitas do ano</button>
               <p id="visits-message" class="message"></p>
             </div>
-
-            <div class="card empty-state-card" id="empty-launch-hint">
+        <div class="card empty-state-card" id="empty-launch-hint">
               <div class="empty-illustration">📋</div>
               <h2>Lançamento mensal</h2>
               <p>Cadastre ou selecione um ACS na lista ao lado para abrir os 12 meses com os campos de cidadãos, visitas e cobertura.</p>
             </div>
-          </div>
-        </div>
       </section>
 
 
       <section id="relatorios-panel" class="panel hidden">
-        <div class="reports-hero card clean-reports-hero new-report-hero">
-          <div>
-            <p class="eyebrow">Relatórios • Gestão ACS</p>
-            <h2>Relatórios de visitas</h2>
-            <p>Visualize a equipe inteira ou monte um documento com diferentes ACS e meses, sem complicação.</p>
-          </div>
-          <div class="report-actions">
-            <button id="btn-run-report" class="primary-btn" type="button">Atualizar resultados</button>
-            <button id="btn-export-report-csv" class="secondary-btn" type="button">Baixar CSV</button>
-            <button id="btn-print-report" class="secondary-btn" type="button">Imprimir / PDF</button>
-          </div>
-        </div>
-        <div class="report-page-grid report-page-grid-v13">
-          <div class="card report-type-card">
-            <div class="report-card-header">
-              <span class="step-pill">1</span>
-              <div><h2>Qual relatório?</h2><p>Selecione a opção desejada.</p></div>
-            </div>
+        <div class="page-context"><h2>Central de relatórios</h2><p>Configure o relatório em uma tela. Na próxima, confira o resultado e imprima somente os dados escolhidos.</p></div>
+        <div id="report-builder-view" class="report-builder-flow">
+          <div class="report-progress"><span class="progress-item current"><b>1</b> Escolher modelo</span><span class="progress-divider">→</span><span class="progress-item"><b>2</b> Selecionar dados</span><span class="progress-divider">→</span><span class="progress-item"><b>3</b> Conferir e emitir</span></div>
+          <section class="card report-step-card" aria-label="Modelo de relatório">
+            <div class="report-step-title"><span class="step-indicator">1</span><div><h3>Que tipo de relatório você precisa?</h3><p>Escolha apenas uma opção.</p></div></div>
             <select id="report-type" class="visually-hidden-select" aria-label="Tipo de relatório">
               <option value="period_all">Equipe completa</option>
               <option value="custom">Seleção personalizada</option>
@@ -294,12 +295,9 @@
                 <span class="option-icon">🏥</span><span><strong>Consolidado</strong><small>Totais por posto e enfermeira.</small></span>
               </button>
             </div>
-          </div>
-          <div class="card report-filter-card">
-            <div class="report-card-header">
-              <span class="step-pill">2</span>
-              <div><h2>Escolha os dados</h2><p>No personalizado, cada clique em Adicionar amplia o mesmo relatório.</p></div>
-            </div>
+          </section>
+          <section class="card report-step-card" aria-label="Filtros do relatório">
+            <div class="report-step-title"><span class="step-indicator">2</span><div><h3>Quais dados devem entrar?</h3><p>Escolha ano, meses e, no personalizado, monte uma lista com quantos ACS precisar.</p></div></div>
             <div class="quick-periods compact-quick-periods" aria-label="Atalhos de período">
               <button type="button" class="quick-period-btn" data-period-preset="current">Mês atual</button>
               <button type="button" class="quick-period-btn" data-period-preset="last3">Últimos 3 meses</button>
@@ -342,47 +340,36 @@
               <div id="report-selection-items" class="selection-items"><p class="muted">A seleção está vazia.</p></div>
               <button id="btn-clear-report-selection" type="button" class="selection-clear-btn">Limpar seleção</button>
             </div>
+          </section>
+          <section class="card report-step-card report-step-finish" aria-label="Conferir filtros">
+            <div class="report-step-title"><span class="step-indicator">3</span><div><h3>Confira antes de gerar</h3><p>Os filtros abaixo serão utilizados na emissão.</p></div></div>
             <div id="report-preview" class="report-preview clean-preview">
               <strong>O que será apresentado</strong><span>Equipe completa, conforme o período escolhido.</span>
             </div>
             <div id="report-help" class="info-box">Escolha os filtros e veja o resultado abaixo.</div>
             <p id="report-message" class="message" role="status" aria-live="polite"></p>
-          </div>
+            <div class="report-final-actions">
+              <p>A impressão ou PDF não inclui menus nem campos de edição.</p>
+              <button id="btn-run-report" class="primary-btn" type="button">Gerar e visualizar relatório →</button>
+            </div>
+          </section>
         </div>
-
-
-        <div class="kpi-grid report-kpis">
+        <div id="report-result-view" class="hidden report-result-flow">
+          <div class="report-result-toolbar">
+            <button id="btn-report-back" class="secondary-btn" type="button">← Alterar filtros</button>
+            <div class="result-actions">
+              <button id="btn-export-report-csv" class="secondary-btn" type="button">↓ Baixar CSV</button>
+              <button id="btn-print-report" class="primary-btn" type="button">▤ Imprimir / Salvar PDF</button>
+            </div>
+          </div>
+          <div class="result-context"><span class="result-status">RELATÓRIO GERADO</span><h2>Resultado da consulta</h2><p>Confira os dados abaixo. Você pode voltar e alterar os filtros a qualquer momento.</p></div>
+          <div class="kpi-grid report-kpis">
           <article class="mini-card"><span>Total de visitas</span><strong id="report-total-visits">0</strong></article>
           <article class="mini-card"><span>Cidadãos somados por mês</span><strong id="report-total-citizens">0</strong></article>
           <article class="mini-card"><span>Cobertura geral</span><strong id="report-coverage">0%</strong></article>
           <article class="mini-card"><span>ACS no relatório</span><strong id="report-total-acs">0</strong></article>
         </div>
-
-        <div class="reports-two-columns compact-insights">
-          <div class="card report-summary-card">
-            <div class="card-title no-margin">
-              <div class="title-icon">↗</div>
-              <div>
-                <h2>Resumo do relatório</h2>
-                <p id="report-summary-text" class="muted">Gere um relatório para visualizar os principais indicadores.</p>
-              </div>
-            </div>
-            <div id="report-highlights" class="report-highlights empty-box">Sem dados carregados ainda.</div>
-          </div>
-
-          <div class="card report-summary-card">
-            <div class="card-title no-margin">
-              <div class="title-icon">◎</div>
-              <div>
-                <h2>Melhores coberturas</h2>
-                <p class="muted">Ranking rápido do período filtrado.</p>
-              </div>
-            </div>
-            <div id="report-ranking-list" class="report-ranking-list empty-box">Sem dados carregados ainda.</div>
-          </div>
-        </div>
-
-        <div class="card report-card advanced-report-card clean-result-card">
+          <div class="card report-card advanced-report-card clean-result-card">
           <div class="section-title-row wrap report-head">
             <div>
               <h2 id="report-title">Resultado do relatório</h2>
@@ -412,56 +399,46 @@
             </table>
           </div>
         </div>
+          <details class="report-details">
+            <summary>Ver análise e destaques do relatório</summary>
+            <div class="reports-two-columns compact-insights">
+          <div class="card report-summary-card">
+            <div class="card-title no-margin">
+              <div class="title-icon">↗</div>
+              <div>
+                <h2>Resumo do relatório</h2>
+                <p id="report-summary-text" class="muted">Gere um relatório para visualizar os principais indicadores.</p>
+              </div>
+            </div>
+            <div id="report-highlights" class="report-highlights empty-box">Sem dados carregados ainda.</div>
+          </div>
+
+          <div class="card report-summary-card">
+            <div class="card-title no-margin">
+              <div class="title-icon">◎</div>
+              <div>
+                <h2>Melhores coberturas</h2>
+                <p class="muted">Ranking rápido do período filtrado.</p>
+              </div>
+            </div>
+            <div id="report-ranking-list" class="report-ranking-list empty-box">Sem dados carregados ainda.</div>
+          </div>
+        </div>
+          </details>
+          <div class="report-data-note"><strong>Como ler os dados:</strong> ao consultar mais de um mês, os cidadãos são somados por competência. Isso não significa quantidade de pessoas únicas.</div>
+        </div>
       </section>
 
-      <section id="admin-panel" class="panel hidden">
-        <div class="admin-hero card">
-          <div>
-            <p class="eyebrow">Área administrativa</p>
-            <h2>Painel geral da Secretaria</h2>
-            <p>Consulte relatórios, acompanhe postos e libere novos administradores.</p>
-          </div>
-          <button id="btn-export-csv" class="secondary-btn">Exportar CSV</button>
-        </div>
 
+      <section id="gestao-panel" class="panel hidden">
+        <div class="page-context"><h2>Gestão das unidades</h2><p>Visão consolidada de postos, enfermeiras e produção registrada. Para relatórios personalizados, utilize a aba Relatórios.</p></div>
+        <div class="admin-report-toolbar"><button id="btn-export-csv" class="secondary-btn">Exportar CSV</button><button class="secondary-btn" type="button" data-go="admin">Gerenciar administradores</button></div>
         <div class="kpi-grid admin-kpis">
           <article class="mini-card"><span>Postos</span><strong id="admin-total-postos">0</strong></article>
           <article class="mini-card"><span>Enfermeiras</span><strong id="admin-total-enfermeiras">0</strong></article>
           <article class="mini-card"><span>ACS</span><strong id="admin-total-acs">0</strong></article>
           <article class="mini-card"><span>Visitas filtradas</span><strong id="admin-total-visitas">0</strong></article>
         </div>
-
-        <div class="admin-grid">
-          <div class="card">
-            <div class="card-title">
-              <div class="title-icon">★</div>
-              <div>
-                <h2>Adicionar administrador</h2>
-                <p>Libere manualmente outro e-mail para acessar o painel administrativo.</p>
-              </div>
-            </div>
-            <label for="admin-name">Nome do administrador</label>
-            <input id="admin-name" type="text" placeholder="Ex.: Coordenadora Maria" />
-            <label for="admin-email">E-mail do administrador</label>
-            <input id="admin-email" type="email" placeholder="Ex.: coordenacao@cidade.go.gov.br" />
-            <label for="admin-posto">Posto/Setor</label>
-            <input id="admin-posto" type="text" placeholder="Ex.: Secretaria de Saúde" />
-            <button id="btn-add-admin" class="primary-btn">Liberar administrador</button>
-            <p id="admin-message" class="message"></p>
-          </div>
-
-          <div class="card">
-            <div class="card-title">
-              <div class="title-icon">✓</div>
-              <div>
-                <h2>Administradores liberados</h2>
-                <p>Contas com acesso administrativo.</p>
-              </div>
-            </div>
-            <div id="admin-list" class="admin-list empty-box">Nenhum administrador adicional cadastrado.</div>
-          </div>
-        </div>
-
         <div class="card report-card">
           <div class="section-title-row wrap report-head">
             <div>
@@ -511,9 +488,51 @@
           </div>
         </div>
       </section>
+      <section id="admin-panel" class="panel hidden">
+        <div class="page-context"><h2>Permissões administrativas</h2><p>Autorize novos administradores de forma controlada. Somente contas com permissão administrativa podem acessar esta área.</p></div>
+        <div class="admin-grid">
+          <div class="card">
+            <div class="card-title">
+              <div class="title-icon">★</div>
+              <div>
+                <h2>Adicionar administrador</h2>
+                <p>Libere manualmente outro e-mail para acessar o painel administrativo.</p>
+              </div>
+            </div>
+            <label for="admin-name">Nome do administrador</label>
+            <input id="admin-name" type="text" placeholder="Ex.: Coordenadora Maria" />
+            <label for="admin-email">E-mail do administrador</label>
+            <input id="admin-email" type="email" placeholder="Ex.: coordenacao@cidade.go.gov.br" />
+            <label for="admin-posto">Posto/Setor</label>
+            <input id="admin-posto" type="text" placeholder="Ex.: Secretaria de Saúde" />
+            <button id="btn-add-admin" class="primary-btn">Liberar administrador</button>
+            <p id="admin-message" class="message"></p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <div class="title-icon">✓</div>
+              <div>
+                <h2>Administradores liberados</h2>
+                <p>Contas com acesso administrativo.</p>
+              </div>
+            </div>
+            <div id="admin-list" class="admin-list empty-box">Nenhum administrador adicional cadastrado.</div>
+          </div>
+        </div>
+      </section>
+
     </section>
+
+    <nav class="mobile-nav" aria-label="Menu principal no celular">
+      <button type="button" data-nav="enfermeira"><span>⌂</span><small>Início</small></button>
+      <button type="button" data-nav="acs"><span>♙</span><small>ACS</small></button>
+      <button type="button" data-nav="lancamentos"><span>▦</span><small>Visitas</small></button>
+      <button type="button" data-nav="relatorios"><span>▤</span><small>Relatórios</small></button>
+      <button type="button" data-nav="gestao" data-admin-nav class="hidden"><span>◫</span><small>Gestão</small></button>
+    </nav>
   </main>
 
-  <script type="module" src="app.js?v=20261105-v13-selecao-acumulativa"></script>
+  <script type="module" src="app.js?v=20261105-v14-painel-modular"></script>
 </body>
 </html>

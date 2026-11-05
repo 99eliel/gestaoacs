@@ -109,3 +109,10 @@ v13 (v13.0.0-20261105) — RELATÓRIOS ACUMULATIVOS
 Na aba Relatórios existem quatro modelos: equipe, seleção personalizada, ranking e consolidado.
 No personalizado, selecione ACS, ano e intervalo de meses e clique em Adicionar ao relatório. Repita para combinar vários ACS ou meses; cada ACS+ano+mês entra apenas uma vez. Retire individualmente no × ou use Limpar seleção.
 O CSV e a impressão incluem somente os lançamentos da seleção. A soma de cidadãos por competência não representa cidadãos únicos ao acumular meses.
+
+
+V14 • NOVA EXPERIÊNCIA MODULAR (v14.0.0-20261105)
+Agora o aplicativo possui telas independentes: Início, Agentes ACS, Lançamentos, Relatórios, Visão da rede e Administradores (as últimas somente para administradores).
+Em Lançamentos, escolha o ACS no seletor superior. Clicar em Abrir lançamento a partir da lista de ACS também abre a tela correta.
+Em Relatórios há etapas visuais: escolha o modelo, ajuste filtros e adicione ACS/meses personalizados, então clique em Gerar e visualizar. O resultado, exportação e impressão/PDF ficam em uma segunda visualização com botão Voltar aos filtros.
+A navegação mobile fica acessível na barra inferior. O Firestore, os IDs e as regras continuam compatíveis.

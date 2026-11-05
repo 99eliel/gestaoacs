@@ -22,7 +22,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const APP_VERSION = "v13.0.0-20261105";
+const APP_VERSION = "v14.0.0-20261105";
 const APP_CACHE_PREFIX = "visitas-acs-";
 console.info(`Sistema Controle ACS carregado: ${APP_VERSION}`);
 
@@ -60,6 +60,8 @@ let adminReportData = [];
 let reportsRawData = [];
 let reportsRenderedRows = [];
 let reportSelection = []; // pares únicos de ACS + competência (ano/mês)
+let reportsDataReady = false;
+let activeScreen = "enfermeira";
 
 const $ = (id) => document.getElementById(id);
 
@@ -90,6 +92,13 @@ const els = {
   adminMessage: $("admin-message"),
   adminList: $("admin-list"),
   tabEnfermeira: $("tab-enfermeira"),
+  tabAcs: $("tab-acs"),
+  tabLancamentos: $("tab-lancamentos"),
+  tabGestao: $("tab-gestao"),
+  acsPanel: $("acs-panel"),
+  lancamentosPanel: $("lancamentos-panel"),
+  gestaoPanel: $("gestao-panel"),
+  launchAcsSelect: $("launch-acs-select"),
   tabAdmin: $("tab-admin"),
   tabRelatorios: $("tab-relatorios"),
   enfermeiraPanel: $("enfermeira-panel"),
@@ -293,22 +302,82 @@ function showApp() {
   els.appArea.classList.remove("hidden");
 }
 
-function openTab(tab) {
-  const isAdminTab = tab === "admin";
-  const isReportsTab = tab === "relatorios";
-  const isDashboardTab = !isAdminTab && !isReportsTab;
 
-  els.tabEnfermeira.classList.toggle("active", isDashboardTab);
-  if (els.tabRelatorios) els.tabRelatorios.classList.toggle("active", isReportsTab);
-  els.tabAdmin.classList.toggle("active", isAdminTab);
+const SCREEN_META = {
+  enfermeira: ["VISÃO GERAL","Início","Uma visão rápida dos indicadores e atalhos da equipe."],
+  acs: ["CADASTRO E EQUIPE","Agentes ACS","Encontre ou cadastre agentes comunitários de saúde."],
+  lancamentos: ["PRODUÇÃO MENSAL","Lançamentos","Registre e corrija as informações mensais."],
+  relatorios: ["CONSULTA E EXPORTAÇÃO","Relatórios","Monte, confira e emita relatórios do seu jeito."],
+  gestao: ["GESTÃO MUNICIPAL","Visão da rede","Acompanhe a produção geral das unidades de saúde."],
+  admin: ["CONTROLE DE ACESSO","Administradores","Autorize e acompanhe os acessos administrativos."]
+};
 
-  els.enfermeiraPanel.classList.toggle("hidden", !isDashboardTab);
-  if (els.relatoriosPanel) els.relatoriosPanel.classList.toggle("hidden", !isReportsTab);
-  els.adminPanel.classList.toggle("hidden", !isAdminTab);
-
-  if (isAdminTab) loadAdminDashboard();
-  if (isReportsTab) loadReportsData();
+function populateLaunchAcsOptions() {
+  const select=els.launchAcsSelect;
+  if (!select) return;
+  const oldValue=selectedAcs?.id || select.value;
+  select.innerHTML='<option value="">Selecione um ACS para começar</option>';
+  acsCache.forEach(acs => {
+    const option=document.createElement("option");
+    option.value=acs.id;
+    option.textContent=`${acs.nome} • ${acs.microarea ? "Microárea "+acs.microarea+" • " : ""}${acs.posto || "Sem posto"}`;
+    select.appendChild(option);
+  });
+  select.value=acsCache.some(acs=>acs.id===oldValue)?oldValue:"";
 }
+
+function showReportBuilder() {
+  $("report-builder-view")?.classList.remove("hidden");
+  $("report-result-view")?.classList.add("hidden");
+}
+
+function showReportResult() {
+  if (!reportsDataReady) {
+    showMessage(els.reportMessage,"Aguarde os dados do relatório carregarem e tente novamente.",true);
+    return;
+  }
+  if (els.reportType.value === "custom" && !reportSelection.length) {
+    showMessage(els.reportMessage,"Adicione ao menos um ACS e mês para gerar o relatório personalizado.",true);
+    return;
+  }
+  renderReports();
+  $("report-builder-view")?.classList.add("hidden");
+  $("report-result-view")?.classList.remove("hidden");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openTab(tab) {
+  if (!SCREEN_META[tab]) tab="enfermeira";
+  if ((tab==="admin" || tab==="gestao") && currentProfile?.tipo!=="admin") tab="enfermeira";
+  activeScreen=tab;
+  const panels = {
+    enfermeira: els.enfermeiraPanel,
+    acs: els.acsPanel,
+    lancamentos: els.lancamentosPanel,
+    relatorios: els.relatoriosPanel,
+    gestao: els.gestaoPanel,
+    admin: els.adminPanel
+  };
+  Object.entries(panels).forEach(([key,panel])=>panel?.classList.toggle("hidden",key!==tab));
+  document.querySelectorAll("[data-nav]").forEach(btn=>{
+    const active=btn.dataset.nav===tab;
+    btn.classList.toggle("active",active);
+    btn.setAttribute("aria-current",active?"page":"false");
+  });
+  const [context,title,description]=SCREEN_META[tab];
+  $("topbar-context").textContent=context;
+  $("topbar-title").textContent=title;
+  $("topbar-description").textContent=description;
+  if (tab==="lancamentos") populateLaunchAcsOptions();
+  if (tab==="relatorios") {
+    showReportBuilder();
+    loadReportsData();
+  }
+  if (tab==="gestao" || tab==="admin") loadAdminDashboard();
+  if (tab==="enfermeira") loadCurrentMonthTotal();
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
 
 function emailKey(email) {
   return String(email || "").trim().toLowerCase();
@@ -465,7 +534,7 @@ async function addAcs() {
 
     $("acs-name").value = "";
     $("acs-microarea").value = "";
-    showMessage(els.acsMessage, "ACS cadastrado com sucesso! A tela de lançamento de visitas foi aberta logo abaixo.");
+    showMessage(els.acsMessage, "ACS cadastrado! Abrindo a tela de lançamento de visitas.");
     await selectAcs(novoAcs);
   } catch (error) {
     showMessage(els.acsMessage, traduzErroFirebase(error), true);
@@ -493,6 +562,7 @@ function listenAcs() {
 
     renderAcsList();
     populateReportAcsOptions();
+    populateLaunchAcsOptions();
     els.totalAcs.textContent = acsCache.length;
     loadCurrentMonthTotal();
   }, (error) => {
@@ -546,6 +616,8 @@ function renderAcsList() {
 
 async function selectAcs(acs) {
   selectedAcs = acs;
+  openTab("lancamentos");
+  populateLaunchAcsOptions();
   els.visitasCard.classList.remove("hidden");
   if (els.emptyLaunchHint) els.emptyLaunchHint.classList.add("hidden");
   showMessage(els.visitsMessage, "");
@@ -558,7 +630,7 @@ async function selectAcs(acs) {
   montarCamposMensais({});
 
   await renderMonthsForSelectedAcs();
-  els.visitasCard.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (activeScreen === "lancamentos") els.visitasCard.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function renderMonthsForSelectedAcs() {
@@ -740,33 +812,29 @@ async function saveVisits() {
 }
 
 async function loadCurrentMonthTotal() {
-  if (!currentUser || !currentProfile || currentProfile.tipo === "admin") return;
+  if (!currentUser || !currentProfile) return;
 
   try {
-    const q = query(
-      collection(db, "visitas"),
-      where("enfermeiraId", "==", currentUser.uid),
+    const filters = [
       where("ano", "==", currentYear()),
       where("mes", "==", currentMonthNumber())
-    );
+    ];
+    if (currentProfile.tipo !== "admin") filters.push(where("enfermeiraId", "==", currentUser.uid));
+    const q = query(collection(db,"visitas"),...filters);
 
     const snap = await getDocs(q);
     let total = 0;
-    let somaPercentual = 0;
-    let mesesComBase = 0;
+    let totalCidadaos = 0;
 
     snap.forEach((item) => {
       const data = item.data();
       total += Number(data.quantidade || 0);
-      if (Number(data.pessoasCadastradas || 0) > 0) {
-        somaPercentual += Number(data.coberturaPercentual ?? calcularPercentual(data.quantidade, data.pessoasCadastradas));
-        mesesComBase += 1;
-      }
+      totalCidadaos += Number(data.pessoasCadastradas || 0);
     });
 
     els.totalCurrentMonth.textContent = total;
     if (els.avgCurrentCoverage) {
-      els.avgCurrentCoverage.textContent = mesesComBase ? `${Math.round(somaPercentual / mesesComBase)}%` : "0%";
+      els.avgCurrentCoverage.textContent = `${calcularPercentual(total,totalCidadaos)}%`;
     }
   } catch (error) {
     els.totalCurrentMonth.textContent = "-";
@@ -952,7 +1020,7 @@ function addToReportSelection() {
   }
   renderReportSelection();
   showMessage(els.reportMessage, added ? `${added} competência(s) adicionada(s) ao relatório.` : "Esses meses desse ACS já estão na seleção.");
-  renderReports();
+  updateReportPreview();
 }
 
 function updateReportPreview() {
@@ -991,6 +1059,7 @@ function updateReportHelp() {
 
 async function loadReportsData() {
   if (!currentUser || !currentProfile || !els.reportTableBody) return;
+  reportsDataReady = false;
 
   populateReportAcsOptions();
   updateReportHelp();
@@ -1007,8 +1076,9 @@ async function loadReportsData() {
     reportsRawData = [];
     snap.forEach((item) => reportsRawData.push({ id: item.id, ...item.data() }));
 
+    reportsDataReady = true;
     showMessage(els.reportMessage, "");
-    renderReports();
+    updateReportPreview();
   } catch (error) {
     showMessage(els.reportMessage, `Erro ao carregar relatórios: ${traduzErroFirebase(error)}`, true);
   }
@@ -1304,7 +1374,7 @@ async function openEditLaunch(acsId, ano, mes) {
 
   ensureYearOption(els.yearSelect, ano);
   els.yearSelect.value = String(ano);
-  openTab("enfermeira");
+  openTab("lancamentos");
   await selectAcs(acs);
   highlightMonthForEditing(mes);
   showMessage(els.visitsMessage, `Editando ${monthName(mes)} de ${ano}. Corrija cidadãos ou visitas e clique em Salvar visitas do ano.`);
@@ -1738,7 +1808,8 @@ function bindEvents() {
   $("btn-save-visits").addEventListener("click", saveVisits);
   $("btn-add-admin").addEventListener("click", addAdminManual);
   $("btn-export-csv").addEventListener("click", exportCsv);
-  $("btn-run-report").addEventListener("click", renderReports);
+  $("btn-run-report").addEventListener("click", showReportResult);
+  $("btn-report-back").addEventListener("click", () => {showReportBuilder(); window.scrollTo({top:0,behavior:"smooth"});});
   $("btn-export-report-csv").addEventListener("click", exportReportCsv);
   $("btn-print-report").addEventListener("click", printCurrentReport);
   $("btn-add-report-selection").addEventListener("click", addToReportSelection);
@@ -1746,14 +1817,14 @@ function bindEvents() {
     reportSelection=[];
     renderReportSelection();
     showMessage(els.reportMessage,"Seleção limpa.");
-    renderReports();
+    updateReportPreview();
   });
   $("report-selection-items").addEventListener("click", event => {
     const btn=event.target.closest("[data-remove-report-row]");
     if (!btn) return;
     reportSelection=reportSelection.filter(item => !(item.acsId===btn.dataset.acs && item.ano===Number(btn.dataset.ano) && item.mes===Number(btn.dataset.mes)));
     renderReportSelection();
-    renderReports();
+    updateReportPreview();
   });
 
   document.querySelectorAll("[data-report-template]").forEach((button) => {
@@ -1762,7 +1833,6 @@ function bindEvents() {
       const type = els.reportType.value;
       showMessage(els.reportMessage, "");
       updateReportHelp();
-      renderReports();
     });
   });
 
@@ -1784,25 +1854,23 @@ function bindEvents() {
   els.adminMonthSelect.addEventListener("change", loadAdminDashboard);
   els.adminSearch.addEventListener("input", renderAdminReport);
 
-  [els.reportType, els.reportYearSelect, els.reportStartMonth, els.reportEndMonth, els.reportAcsSelect].forEach((el) => {
-    if (el) el.addEventListener("change", renderReports);
+  [els.reportYearSelect, els.reportStartMonth, els.reportEndMonth, els.reportAcsSelect].forEach((el) => {
+    if (el) el.addEventListener("change", updateReportPreview);
   });
-  if (els.reportSearch) els.reportSearch.addEventListener("input", () => {
-    updateReportPreview();
-    renderReports();
+  if (els.reportSearch) els.reportSearch.addEventListener("input", updateReportPreview);
+
+
+  document.querySelectorAll("[data-nav], [data-go]").forEach(btn=>{
+    btn.addEventListener("click",()=>openTab(btn.dataset.nav || btn.dataset.go));
   });
-
-
-  els.tabEnfermeira.addEventListener("click", () => openTab("enfermeira"));
-  if (els.tabRelatorios) els.tabRelatorios.addEventListener("click", () => openTab("relatorios"));
-  els.tabAdmin.addEventListener("click", () => openTab("admin"));
-
-  document.querySelectorAll("[data-scroll-target]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      openTab("enfermeira");
-      const target = document.getElementById(btn.dataset.scrollTarget);
-      if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
+  els.launchAcsSelect.addEventListener("change",event=>{
+    const acs=acsCache.find(item=>item.id===event.target.value);
+    if (acs) selectAcs(acs);
+    else {
+      selectedAcs=null;
+      els.visitasCard.classList.add("hidden");
+      els.emptyLaunchHint?.classList.remove("hidden");
+    }
   });
 
   document.querySelectorAll("[data-toggle-password]").forEach((btn) => {
@@ -1823,6 +1891,7 @@ onAuthStateChanged(auth, async (user) => {
       selectedAcs = null;
       acsCache = [];
       reportSelection = [];
+      reportsDataReady = false;
       if (els.emptyLaunchHint) els.emptyLaunchHint.classList.remove("hidden");
       if (unsubscribeAcs) unsubscribeAcs();
       showAuth();
@@ -1831,16 +1900,18 @@ onAuthStateChanged(auth, async (user) => {
 
     currentProfile = await loadUserProfile(user);
     reportSelection = [];
+    reportsDataReady = false;
     showApp();
 
     els.userInfo.textContent = `${currentProfile.posto} • ${currentProfile.tipo}`;
     const sidebarName = document.getElementById("sidebar-user-name");
     if (sidebarName) sidebarName.textContent = currentProfile.nome || currentUser.email;
     els.postoName.textContent = currentProfile.posto || "-";
-    els.tabAdmin.classList.toggle("hidden", currentProfile.tipo !== "admin");
+    document.querySelectorAll("[data-admin-nav]").forEach(node=>node.classList.toggle("hidden",currentProfile.tipo!=="admin"));
+    $("topbar-unit").textContent=currentProfile.posto || "Secretaria de Saúde";
 
     if (currentProfile.tipo === "admin") {
-      openTab("admin");
+      openTab("gestao");
     } else {
       openTab("enfermeira");
     }
