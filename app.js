@@ -1020,7 +1020,7 @@ function getReportConfig() {
   const ano = Number(els.reportYearSelect.value);
   let inicio = Number(els.reportStartMonth.value);
   let fim = Number(els.reportEndMonth.value);
-  const acsId = type === "custom" ? "" : els.reportAcsSelect.value;
+  const acsId = ""; // seleção de ACS individual é exclusiva do construtor personalizado
   const search = type === "custom" ? "" : normalizeText(els.reportSearch.value).toLowerCase();
   if (inicio > fim) [inicio, fim] = [fim, inicio];
   return {type,ano,inicio,fim,acsId,search};
